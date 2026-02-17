@@ -617,12 +617,12 @@ function EmailWindow({ onClose, zIndex, onFocus, layout }) {
 }
 
 /* ─── IM WINDOW ────────────────────────────────────────────────────── */
-function IMWindow({ onClose, zIndex, onFocus, layout }) {
+function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
   const [msg, setMsg] = useState("");
   const [typing, setTyping] = useState(false);
-  const [messages, setMessages] = useState([
-    { from: "manager", text: "lmk if you need anything, slammed today", time: "9:02 AM" },
-  ]);
+  const [blocked, setBlocked] = useState(false);
+  const [flagCount, setFlagCount] = useState(0);
+  const [messages, setMessages] = useState([]);
   const chatRef = useRef(null);
   const isCompact = layout === "landscape";
 
@@ -633,7 +633,7 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
   }, [messages, typing]);
 
   const send = async () => {
-    if (!msg.trim() || typing) return;
+    if (!msg.trim() || typing || blocked) return;
     const userMsg = { from: "you", text: msg.trim(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
     const updated = [...messages, userMsg];
     setMessages(updated);
@@ -641,12 +641,27 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
     setTyping(true);
 
     try {
-      const reply = await sendIM(updated);
-      setMessages(prev => [...prev, {
-        from: "manager",
-        text: reply,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      }]);
+      const { reply, flagged } = await sendIM(updated);
+      const newCount = flagged ? flagCount + 1 : flagCount;
+      setFlagCount(newCount);
+
+      if (newCount >= 3) {
+        setMessages(prev => [...prev, {
+          from: "manager",
+          text: "i'm blocking you, bye",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }]);
+        setBlocked(true);
+      } else {
+        setMessages(prev => [...prev, {
+          from: "manager",
+          text: reply,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }]);
+        if (reply.trim().toLowerCase() === "k" && onTimeExtended) {
+          onTimeExtended();
+        }
+      }
     } catch (err) {
       setMessages(prev => [...prev, {
         from: "manager",
@@ -657,6 +672,8 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
       setTyping(false);
     }
   };
+
+  const disabled = typing || blocked;
 
   return (
     <AppWindow title="Instant Message Manager" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#7B83EB" layout={layout}>
@@ -674,7 +691,9 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
         }}>SM</div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, fontFamily: '"Segoe UI", sans-serif' }}>Sarah Mitchell</div>
-          <div style={{ fontSize: 11, color: "#4CAF50", fontFamily: '"Segoe UI", sans-serif' }}>● Online — Senior Manager</div>
+          <div style={{ fontSize: 11, color: blocked ? "#E8453C" : "#4CAF50", fontFamily: '"Segoe UI", sans-serif' }}>
+            {blocked ? "● Blocked" : "● Online — Senior Manager"}
+          </div>
         </div>
       </div>
       <div ref={chatRef} style={{
@@ -717,29 +736,39 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
           </div>
         )}
       </div>
-      <div style={{
-        padding: isCompact ? "4px 10px" : "8px 10px",
-        borderTop: "1px solid #e8e8e8",
-        display: "flex", gap: 8, background: "#f9f9f9",
-      }}>
-        <input
-          value={msg} onChange={e => setMsg(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && send()}
-          placeholder="Type a message..."
-          disabled={typing}
-          style={{
-            flex: 1, border: "1px solid #ddd", borderRadius: 4,
-            padding: "8px 12px", fontSize: 16, outline: "none",
-            fontFamily: '"Segoe UI", sans-serif',
-            opacity: typing ? 0.6 : 1,
-          }}
-        />
-        <button onClick={send} disabled={typing} style={{
-          background: typing ? "#aaa" : "#7B83EB", color: "white", border: "none",
-          borderRadius: 4, padding: "8px 16px", cursor: typing ? "default" : "pointer",
-          fontFamily: '"Segoe UI", sans-serif', fontSize: 13, fontWeight: 600,
-        }}>Send</button>
-      </div>
+      {blocked ? (
+        <div style={{
+          padding: "12px 14px", borderTop: "1px solid #e8e8e8",
+          background: "#f9f9f9", textAlign: "center",
+          fontSize: 12, color: "#999", fontFamily: '"Segoe UI", sans-serif',
+        }}>
+          Sarah Mitchell has blocked you
+        </div>
+      ) : (
+        <div style={{
+          padding: isCompact ? "4px 10px" : "8px 10px",
+          borderTop: "1px solid #e8e8e8",
+          display: "flex", gap: 8, background: "#f9f9f9",
+        }}>
+          <input
+            value={msg} onChange={e => setMsg(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && send()}
+            placeholder="Type a message..."
+            disabled={disabled}
+            style={{
+              flex: 1, border: "1px solid #ddd", borderRadius: 4,
+              padding: "8px 12px", fontSize: 16, outline: "none",
+              fontFamily: '"Segoe UI", sans-serif',
+              opacity: disabled ? 0.6 : 1,
+            }}
+          />
+          <button onClick={send} disabled={disabled} style={{
+            background: disabled ? "#aaa" : "#7B83EB", color: "white", border: "none",
+            borderRadius: 4, padding: "8px 16px", cursor: disabled ? "default" : "pointer",
+            fontFamily: '"Segoe UI", sans-serif', fontSize: 13, fontWeight: 600,
+          }}>Send</button>
+        </div>
+      )}
     </AppWindow>
   );
 }
@@ -909,8 +938,11 @@ export default function AuditDesktop() {
   const secs = countdown % 60;
   const countdownStr = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const timerColor = countdown <= 10 ? "#FF4444" : countdown <= 30 ? "#FFB020" : "#4EC94E";
-  const timerDone = countdown === 0;
+const timerDone = countdown === 0;
 
+  const extendTimer = useCallback(() => {
+    setCountdown(prev => prev > 0 ? prev + 600 : prev);
+  }, []);
   return (
     <div style={{
       width: "100vw", height: "100vh", overflow: "hidden",
@@ -1039,7 +1071,7 @@ export default function AuditDesktop() {
       )}
       {openWindows.includes("im") && (
         <IMWindow onClose={() => closeApp("im")} zIndex={windowZ["im"] || 10}
-          onFocus={() => focusApp("im")} layout={layout} />
+          onFocus={() => focusApp("im")} layout={layout} onTimeExtended={extendTimer} />
       )}
       {openWindows.includes("finalize") && (
         <FinalizeWindow onClose={() => closeApp("finalize")} zIndex={windowZ["finalize"] || 10}

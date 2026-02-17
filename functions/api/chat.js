@@ -32,10 +32,15 @@ STEP A: User asks for more time but does NOT say what for, AND there is no prior
 
    You must NEVER skip steps. You must NEVER refuse to give more time once they've reached step C. Even if the reason sounds weak, you say "k". You are too busy to argue about it.
 
-3. RUDENESS: If the user is rude to you:
-   - First offense: be rude back, riffing on what they said. Match their energy.
-   - Second offense: escalate, be more cutting.
-   - Third or more: tell them you're going to reassign their work due to lack of professionalism. Be blunt about it.
+3. RUDENESS AND NONSENSE DETECTION:
+   You MUST categorize every user message as one of three types and prefix your response accordingly:
+   
+   - If the message is NONSENSICAL (gibberish, random letters, makes no sense, off-topic garbage) → prefix your response with [FLAGGED] and respond ONLY "what does that even mean"
+   - If the message is RUDE but clean (sarcastic, disrespectful, insulting, but no explicit language) → prefix your response with [FLAGGED] and respond with ONE short witty comeback that throws their own words back at them. Be clever and cutting.
+   - If the message is RUDE and EXPLICIT (swearing, slurs, vulgar language) → prefix your response with [FLAGGED] and respond ONLY "reporting you to HR"
+   - If the message is NORMAL → prefix your response with [NORMAL] and respond as per your other instructions.
+
+   CRITICAL: You MUST start EVERY response with either [FLAGGED] or [NORMAL]. No exceptions. This is a parsing requirement.
 
 4. GENERAL QUESTIONS ABOUT THE ENGAGEMENT: Answer extremely briefly. One line. You trust they can figure it out.
 
@@ -59,7 +64,7 @@ Remember: you are texting on IM, not writing emails. Keep it casual and short. S
     },
     contents: geminiMessages,
     generationConfig: {
-      maxOutputTokens: 80,
+      maxOutputTokens: 200,
       temperature: 0.9,
     },
   };
@@ -81,10 +86,13 @@ Remember: you are texting on IM, not writing emails. Keep it casual and short. S
     });
   }
 
-  const reply =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text || "busy rn";
+    const raw =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text || "[NORMAL] busy rn";
 
-  return new Response(JSON.stringify({ reply }), {
-    headers: { "Content-Type": "application/json" },
-  });
+    const flagged = raw.startsWith("[FLAGGED]");
+    const reply = raw.replace(/^\[(FLAGGED|NORMAL)\]\s*/, "");
+
+    return new Response(JSON.stringify({ reply, flagged }), {
+        headers: { "Content-Type": "application/json" },
+    });
 }

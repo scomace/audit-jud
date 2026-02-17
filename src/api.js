@@ -6,5 +6,5 @@ export async function sendIM(messages) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
-  return data.reply;
+  return { reply: data.reply, flagged: data.flagged };
 }
