@@ -56,15 +56,7 @@ const IMIcon = () => (
   </svg>
 );
 
-const DocIcon = () => (
-  <svg viewBox="0 0 48 48" width="100%" height="100%">
-    <path d="M10 4h20l10 10v30a2 2 0 01-2 2H10a2 2 0 01-2-2V6a2 2 0 012-2z" fill="#E8453C" />
-    <path d="M30 4v10h10" fill="#C23127" />
-    <path d="M16 24h16M16 30h16M16 36h10" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-    <circle cx="24" cy="17" r="5" fill="none" stroke="white" strokeWidth="1.5" />
-    <path d="M22 17l1.5 2 3-3.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+
 
 const WinIcon = () => (
   <svg viewBox="0 0 20 20" width="100%" height="100%">
@@ -580,7 +572,7 @@ function EmailWindow({ onClose, zIndex, onFocus, layout }) {
   };
 
   return (
-    <AppWindow title="E-mail Client — New Message" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#0078D4" layout={layout}>
+    <AppWindow title="Outlook — New Message" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#0078D4" layout={layout}>
       <div style={{
         padding: isCompact ? "4px 14px" : "8px 14px",
         borderBottom: "1px solid #e8e8e8",
@@ -676,7 +668,7 @@ function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
   const disabled = typing || blocked;
 
   return (
-    <AppWindow title="Instant Message Manager" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#7B83EB" layout={layout}>
+    <AppWindow title="Teams Messenger" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#7B83EB" layout={layout}>
       <div style={{
         padding: isCompact ? "6px 14px" : "10px 14px",
         borderBottom: "1px solid #e8e8e8",
@@ -773,77 +765,7 @@ function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
   );
 }
 
-/* ─── FINALIZE DOCUMENTATION WINDOW ────────────────────────────────── */
-function FinalizeWindow({ onClose, zIndex, onFocus, layout }) {
-  const [submitted, setSubmitted] = useState(false);
-  const isCompact = layout === "landscape";
 
-  return (
-    <AppWindow title="Finalize Documentation" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#E8453C" layout={layout}>
-      <div style={{
-        padding: isCompact ? "14px 20px" : "30px 24px", textAlign: "center",
-        display: "flex", flexDirection: isCompact ? "row" : "column",
-        alignItems: "center", gap: isCompact ? 16 : 16,
-        justifyContent: "center", flex: 1,
-      }}>
-        {!submitted ? (
-          <>
-            <div style={{
-              width: isCompact ? 40 : 56, height: isCompact ? 40 : 56,
-              borderRadius: "50%", background: "#FFF3E0",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: isCompact ? 20 : 28, flexShrink: 0,
-            }}>⚠️</div>
-            <div style={{ textAlign: isCompact ? "left" : "center" }}>
-              <div style={{
-                fontSize: isCompact ? 14 : 16, fontWeight: 600, color: "#1a1a1a",
-                fontFamily: '"Segoe UI", sans-serif', lineHeight: 1.4,
-              }}>
-                Complete and Submit Documentation Before the Deadline
-              </div>
-              <div style={{
-                fontSize: 13, color: "#666", fontFamily: '"Segoe UI", sans-serif',
-                maxWidth: 320, lineHeight: 1.5, marginTop: 6,
-              }}>
-                Please ensure all working papers, client communications, and review notes have been finalized before submitting.
-              </div>
-              <button onClick={() => setSubmitted(true)} style={{
-                background: "#E8453C", color: "white", border: "none",
-                padding: isCompact ? "8px 28px" : "12px 40px",
-                fontSize: 14, fontWeight: 600,
-                cursor: "pointer", fontFamily: '"Segoe UI", sans-serif',
-                marginTop: isCompact ? 8 : 14, borderRadius: 2,
-                boxShadow: "0 2px 8px rgba(232,69,60,0.3)",
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = "#d13a32"}
-                onMouseLeave={e => e.currentTarget.style.background = "#E8453C"}
-              >Submit Documentation</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{
-              width: isCompact ? 40 : 56, height: isCompact ? 40 : 56,
-              borderRadius: "50%", background: "#E8F5E9",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: isCompact ? 20 : 28, flexShrink: 0,
-            }}>✓</div>
-            <div style={{ textAlign: isCompact ? "left" : "center" }}>
-              <div style={{
-                fontSize: 16, fontWeight: 600, color: "#2E7D32",
-                fontFamily: '"Segoe UI", sans-serif',
-              }}>Documentation Submitted</div>
-              <div style={{ fontSize: 13, color: "#666", fontFamily: '"Segoe UI", sans-serif', marginTop: 4 }}>
-                Your documentation has been submitted for review.
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </AppWindow>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    MAIN DESKTOP
@@ -851,9 +773,8 @@ function FinalizeWindow({ onClose, zIndex, onFocus, layout }) {
 const DESKTOP_ITEMS = [
   { id: "cy-folder", label: "Current Year Audit\nWorking Papers", type: "folder-cy" },
   { id: "py-folder", label: "Prior Year Audit\nWorking Papers", type: "folder-py" },
-  { id: "email", label: "E-mail Client", type: "email" },
-  { id: "im", label: "Instant Message\nManager", type: "im" },
-  { id: "finalize", label: "Finalize\nDocumentation", type: "finalize" },
+  { id: "email", label: "Outlook", type: "email" },
+  { id: "im", label: "Teams\nMessaging", type: "im" },
 ];
 
 function getIcon(type, size) {
@@ -864,7 +785,6 @@ function getIcon(type, size) {
       {type === "folder-py" && <FolderIcon color="#BDB76B" />}
       {type === "email" && <EmailIcon />}
       {type === "im" && <IMIcon />}
-      {type === "finalize" && <DocIcon />}
     </div>
   );
 }
@@ -888,15 +808,16 @@ export default function AuditDesktop() {
     return () => clearInterval(t);
   }, []);
 
-  const openApp = useCallback((id) => {
-    setOpenWindows(prev => prev.includes(id) ? prev : [...prev, id]);
-    if (id === "finalize") setNotifPulse(false);
-    setTopZ(z => {
-      setWindowZ(prev => ({ ...prev, [id]: z + 1 }));
-      return z + 1;
-    });
-    setStartOpen(false);
-  }, []);
+const openApp = useCallback((id) => {
+  setOpenWindows(prev => prev.includes(id) ? prev : [...prev, id]);
+  if (id === "cy-folder") setNotifPulse(false);
+  setTopZ(z => {
+    setWindowZ(prev => ({ ...prev, [id]: z + 1 }));
+    return z + 1;
+  });
+  setStartOpen(false);
+}, []);
+
 
   const closeApp = useCallback((id) => {
     setOpenWindows(prev => prev.filter(w => w !== id));
@@ -1049,16 +970,17 @@ export default function AuditDesktop() {
           >
             <div style={{ width: iconSize, height: iconSize, position: "relative" }}>
               {getIcon(item.type, iconSize)}
-              {item.type === "finalize" && notifPulse && (
-                <div style={{
-                  position: "absolute", top: -4, right: -4,
-                  width: 18, height: 18, borderRadius: "50%",
-                  background: "#E8453C", border: "2px solid rgba(255,255,255,0.9)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "white", fontSize: 9, fontWeight: 700,
-                  animation: "notifBounce 2s infinite, notifGlow 2s infinite",
-                }}>!</div>
-              )}
+              {item.id === "cy-folder" && notifPulse && (
+            <div style={{
+              position: "absolute", top: -4, right: -4,
+              width: 18, height: 18, borderRadius: "50%",
+              background: "#E8453C", border: "2px solid rgba(255,255,255,0.9)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "white", fontSize: 9, fontWeight: 700,
+              animation: "notifBounce 2s infinite, notifGlow 2s infinite",
+            }}>!</div>
+          )}
+
             </div>
             <span style={{
               color: "white", fontSize: isCompact ? 10 : 11, textAlign: "center",
@@ -1092,10 +1014,7 @@ export default function AuditDesktop() {
         <IMWindow onClose={() => closeApp("im")} zIndex={windowZ["im"] || 10}
           onFocus={() => focusApp("im")} layout={layout} onTimeExtended={extendTimer} />
       )}
-      {openWindows.includes("finalize") && (
-        <FinalizeWindow onClose={() => closeApp("finalize")} zIndex={windowZ["finalize"] || 10}
-          onFocus={() => focusApp("finalize")} layout={layout} />
-      )}
+
 
       {/* ─── START MENU ─── */}
       {startOpen && (
