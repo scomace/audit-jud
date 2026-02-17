@@ -138,86 +138,63 @@ function AppWindow({ title, children, onClose, zIndex, onFocus, accentColor = "#
 
 /* ─── SPREADSHEET DATA ─────────────────────────────────────────────── */
 
-const CY_ROWS = [
-  { section: "Projected Net Income" },
-  { label: "2023 (Actual)", value: 500000 },
-  { label: "2024 (Actual)", value: 550000 },
-  { label: "2025 (Actual)", value: 605000 },
-  { label: "2026 (Projected)", value: 665500 },
-  { label: "2027 (Projected)", value: 732050 },
-  { spacer: true },
-  { section: "Fair Value Estimate" },
-  { label: "Terminal Growth Rate", text: "3.0%" },
-  { label: "Discount Rate (WACC)", text: "12.0%" },
-  { label: "Capitalization Rate", text: "9.0%" },
-  { label: "Normalized Earnings", value: 665500 },
-  { label: "Fair Value (Income)", value: 7394444, bold: true, topBorder: true },
-  { spacer: true },
-  { section: "Impairment Test" },
-  { label: "Net Assets (excl. GW)", value: 4250000 },
-  { label: "Goodwill", value: 1800000 },
-  { label: "Carrying Amount", value: 6050000, bold: true, topBorder: true },
-  { spacer: true },
-  { label: "Fair Value", value: 7394444 },
-  { label: "Less: Carrying Amt", value: -6050000 },
-  { label: "Excess / (Deficiency)", value: 1344444, bold: true, topBorder: true },
-  { spacer: true },
-  { label: "Impairment Loss", value: 0, bold: true, highlight: true },
-  { label: "Revised Goodwill", value: 1800000, bold: true, doubleBorder: true },
-  { spacer: true },
-  { section: "Key Assumptions" },
-  { assumption: "Revenue growth of 10% per year based on 3-year historical trend." },
-  { assumption: "Discount rate of 12% reflects company-specific risk and current market rates." },
-  { assumption: "Terminal growth rate of 3% aligned with long-term GDP forecast." },
-  { assumption: "Normalized earnings based on 2026 projected net income." },
+const AUDIT_CY = new Date().getFullYear() - 1;
+const AUDIT_PY = new Date().getFullYear() - 2;
+
+const COLUMNS = [
+  { label: "Aging Bucket", width: "1.2fr", align: "left" },
+  { label: "Balance", width: "1fr", align: "right" },
+  { label: "Rate", width: "0.6fr", align: "right" },
+  { label: "Reserve", width: "1fr", align: "right" },
 ];
 
-const PY_ROWS = [
-  { section: "Projected Net Income" },
-  { label: "2022 (Actual)", value: 413000 },
-  { label: "2023 (Actual)", value: 500000,
-    note: "Verified to GL \u2014 no exceptions noted." },
-  { label: "2024 (Projected)", value: 550000 },
-  { label: "2025 (Projected)", value: 605000 },
-  { label: "2026 (Projected)", value: 665500,
-    note: "10% annual increase appears reasonable based on 2022\u20132023 actual growth of ~21%." },
-  { spacer: true },
-  { section: "Fair Value Estimate" },
-  { label: "Terminal Growth Rate", text: "3.0%" },
-  { label: "Discount Rate (WACC)", text: "12.0%",
-    note: "WACC recalculated \u2014 consistent with comparable public companies." },
-  { label: "Capitalization Rate", text: "9.0%" },
-  { label: "Normalized Earnings", value: 550000 },
-  { label: "Fair Value (Income)", value: 6111111, bold: true, topBorder: true },
-  { spacer: true },
-  { section: "Impairment Test" },
-  { label: "Net Assets (excl. GW)", value: 4100000 },
-  { label: "Goodwill", value: 1800000 },
-  { label: "Carrying Amount", value: 5900000, bold: true, topBorder: true },
-  { spacer: true },
-  { label: "Fair Value", value: 6111111 },
-  { label: "Less: Carrying Amt", value: -5900000 },
-  { label: "Excess / (Deficiency)", value: 211111, bold: true, topBorder: true,
-    note: "Sufficient cushion \u2014 no impairment." },
-  { spacer: true },
-  { label: "Impairment Loss", value: 0, bold: true, highlight: true },
-  { label: "Revised Goodwill", value: 1800000, bold: true, doubleBorder: true,
-    note: "No adjustment required. Workpaper complete." },
-  { spacer: true },
-  { section: "Key Assumptions" },
-  { assumption: "Revenue growth of 10% per year based on historical trend." },
-  { assumption: "Discount rate of 12% reflects company-specific risk and current market rates." },
-  { assumption: "Terminal growth rate of 3% aligned with long-term GDP forecast." },
-  { assumption: "Normalized earnings based on 2024 projected net income.",
-    note: "Assumptions reviewed and approved \u2014 S. Mitchell, Senior Manager." },
-];
+const CY_DATA = {
+  title: `Allowance for Doubtful Accounts — CY ${AUDIT_CY}`,
+  subtitle: "Client: Sample Corp — Trade Receivables",
+  rows: [
+    { section: "A/R Aging Analysis" },
+    { cells: ["Current", 425000, "1.0%", 4250] },
+    { cells: ["31–60 days", 112000, "5.0%", 5600] },
+    { cells: ["61–90 days", 48000, "15.0%", 7200] },
+    { cells: ["91–120 days", 23000, "35.0%", 8050] },
+    { cells: ["> 120 days", 14500, "75.0%", 10875] },
+    { spacer: true },
+    { cells: ["Total A/R", 622500, "", 35975], bold: true, topBorder: true },
+  ],
+  judgment: [
+    { step: "Step 1: Clarify Issues & Objectives", content: null },
+    { step: "Step 2: Consider Alternatives", content: null },
+    { step: "Step 3: Gather & Evaluate Information", content: null },
+    { step: "Step 4: Reach Conclusion", content: null },
+    { step: "Step 5: Articulate & Document Rationale", content: null },
+  ],
+};
 
-const CY_DATA = { title: "Goodwill Impairment \u2014 CY 2025", rows: CY_ROWS };
-const PY_DATA = { title: "Goodwill Impairment \u2014 PY 2024", rows: PY_ROWS };
-
+const PY_DATA = {
+  title: `Allowance for Doubtful Accounts — PY ${AUDIT_PY}`,
+  subtitle: "Client: Sample Corp — Trade Receivables",
+  rows: [
+    { section: "A/R Aging Analysis" },
+    { cells: ["Current", 398000, "1.0%", 3980] },
+    { cells: ["31–60 days", 95000, "5.0%", 4750] },
+    { cells: ["61–90 days", 38000, "15.0%", 5700] },
+    { cells: ["91–120 days", 19500, "35.0%", 6825] },
+    { cells: ["> 120 days", 11200, "75.0%", 8400] },
+    { spacer: true },
+    { cells: ["Total A/R", 561700, "", 29655], bold: true, topBorder: true },
+  ],
+  judgment: [
+    { step: "Step 1: Clarify Issues & Objectives", content: "To assess the existence and valuation of accounts receivable by analyzing the allowance for estimated credit losses. Specifically, evaluate whether management's reserve rates applied to each aging bucket are reasonable and whether the total recorded allowance is adequate." },
+    { step: "Step 2: Consider Alternatives", content: "Considered three approaches: (1) Accept client's rates as consistent with prior year, (2) independently recalculate rates using historical write-off data from the past three years, or (3) benchmark against industry loss rates for similar-sized distributors. Elected to perform approach (2) and corroborate with (1)." },
+    { step: "Step 3: Gather & Evaluate Information", content: `Obtained A/R aging subledger as of December 31, ${AUDIT_PY} and agreed to GL without exception. Obtained 3-year write-off history from client controller. Historical write-off rates by bucket: Current 0.8%, 31\u201360 days 4.2%, 61\u201390 days 13.1%, 91\u2013120 days 31.7%, >120 days 72.4%. Client's applied rates are slightly conservative relative to historical experience, which is appropriate given current economic conditions. No individually significant receivables identified requiring specific reserve.` },
+    { step: "Step 4: Reach Conclusion", content: `The client's recorded allowance is reasonable. Applied rates are consistent with historical write-off experience and are appropriately conservative. The total calculated reserve of $29,655 is in line with management's recorded balance. No material misstatement identified. The allowance for doubtful accounts is fairly stated as of December 31, ${AUDIT_PY}.` },
+    { step: "Step 5: Articulate & Document Rationale", content: `We conclude the allowance is reasonable based on: (a) rates are supported by 3-year historical write-off data, (b) rates are slightly conservative versus historical actuals, which is appropriate, (c) no concentration risk or individually significant past-due balances were identified, and (d) methodology is consistent with the prior year. No adjustment proposed. Workpaper reviewed and approved \u2014 S. Mitchell, Senior Manager.` },
+  ],
+};
 
 function formatCurrency(val) {
-  if (val === null || val === undefined) return "";
+  if (val === null || val === undefined || val === "") return "";
+  if (typeof val === "string") return val;
   const neg = val < 0;
   const str = "$" + Math.abs(val).toLocaleString("en-US");
   return neg ? "(" + str + ")" : str;
@@ -227,265 +204,281 @@ function formatCurrency(val) {
 function SpreadsheetView({ data, layout }) {
   const isCompact = layout === "landscape";
   const f = '"Segoe UI", sans-serif';
-  const fs = isCompact ? 10 : 12;
-  const cellPad = isCompact ? "4px 6px" : "6px 8px";
-  const spacerPad = isCompact ? "2px 6px" : "3px 8px";
+  const mono = '"Consolas", "Courier New", monospace';
+  const cellPad = isCompact ? "4px 5px" : "6px 8px";
 
   const rowNumStyle = {
-    background: "#e8e8e8", border: "1px solid #d0d0d0",
-    padding: "3px 0", fontSize: 10, color: "#888",
-    textAlign: "center", width: 28, minWidth: 28,
+    background: "#e8e8e8", borderRight: "1px solid #d0d0d0",
+    borderBottom: "1px solid #d0d0d0",
+    padding: "2px 0", fontSize: 9, color: "#888",
+    textAlign: "center", width: 24, minWidth: 24, flexShrink: 0,
   };
 
-  let rowCounter = 0;
+  let rowNum = 0;
 
   const renderRow = (row, i) => {
-    rowCounter++;
-    const rn = rowCounter + 3;
+    rowNum++;
+    const rn = rowNum + 3;
 
-    // Section header
     if (row.section) {
       return (
-        <tr key={i}>
-          <td style={rowNumStyle}>{rn}</td>
-          <td colSpan={2} style={{
-            border: "1px solid #d0d0d0", padding: cellPad,
-            fontWeight: 700, fontSize: isCompact ? 10 : 12,
+        <div key={i} style={{ display: "flex" }}>
+          <div style={rowNumStyle}>{rn}</div>
+          <div style={{
+            flex: 1, padding: cellPad,
+            fontWeight: 700, fontSize: isCompact ? 9 : 11,
             color: "#217346", background: "#edf7ed",
-            letterSpacing: 0.3,
-          }}>{row.section}</td>
-        </tr>
+            borderBottom: "1px solid #d0d0d0",
+          }}>{row.section}</div>
+        </div>
       );
     }
 
-    // Assumption text row
-    if (row.assumption) {
-      const rows = [(
-        <tr key={i}>
-          <td style={rowNumStyle}>{rn}</td>
-          <td colSpan={2} style={{
-            border: "1px solid #d0d0d0", padding: cellPad,
-            fontSize: isCompact ? 9 : 11, color: "#555",
-            fontStyle: "italic", lineHeight: 1.4,
-            background: "#fafafa",
-          }}>
-            {"\u2022 " + row.assumption}
-          </td>
-        </tr>
-      )];
-      if (row.note) {
-        rowCounter++;
-        rows.push(
-          <tr key={i + "-note"}>
-            <td style={rowNumStyle}>{rowCounter + 3}</td>
-            <td colSpan={2} style={{
-              border: "1px solid #d0d0d0",
-              padding: isCompact ? "3px 6px 3px 16px" : "4px 8px 4px 20px",
-              fontSize: isCompact ? 9 : 11, color: "#1a8c3a",
-              fontStyle: "italic", fontWeight: 600,
-              background: "#f4fdf6",
-            }}>
-              {"\u270E " + row.note}
-            </td>
-          </tr>
-        );
-      }
-      return rows;
-    }
-
-    // Spacer
     if (row.spacer) {
       return (
-        <tr key={i}>
-          <td style={rowNumStyle}>{rn}</td>
-          <td style={{ border: "1px solid #d0d0d0", padding: spacerPad }}></td>
-          <td style={{ border: "1px solid #d0d0d0", padding: spacerPad }}></td>
-        </tr>
+        <div key={i} style={{ display: "flex" }}>
+          <div style={rowNumStyle}>{rn}</div>
+          <div style={{ flex: 1, height: isCompact ? 4 : 6, borderBottom: "1px solid #eee" }} />
+        </div>
       );
     }
 
-    // Data row
-    const isNeg = row.value != null && row.value < 0;
-    const dataRows = [(
-      <tr key={i}>
-        <td style={rowNumStyle}>{rn}</td>
-        <td style={{
-          border: "1px solid #d0d0d0", padding: cellPad,
-          fontWeight: row.bold ? 700 : 400, fontSize: fs,
-          color: "#1a1a1a",
-          borderTop: row.topBorder ? "1.5px solid #333" : undefined,
-          borderBottom: row.doubleBorder ? "3px double #333" : undefined,
-          background: row.highlight ? "#fff8e1" : "white",
-        }}>{row.label}</td>
-        <td style={{
-          border: "1px solid #d0d0d0", padding: cellPad,
-          fontWeight: row.bold ? 700 : 400, fontSize: fs,
-          textAlign: "right",
-          fontFamily: '"Consolas", "Courier New", monospace',
-          color: isNeg ? "#c00" : "#1a1a1a",
-          borderTop: row.topBorder ? "1.5px solid #333" : undefined,
-          borderBottom: row.doubleBorder ? "3px double #333" : undefined,
+    return (
+      <div key={i} style={{ display: "flex" }}>
+        <div style={rowNumStyle}>{rn}</div>
+        <div style={{
+          flex: 1, display: "grid",
+          gridTemplateColumns: COLUMNS.map(c => c.width).join(" "),
+          borderBottom: row.doubleBorder ? "3px double #333" : row.topBorder ? "1.5px solid #333" : "1px solid #eee",
           background: row.highlight ? "#fff8e1" : "white",
         }}>
-          {row.text || formatCurrency(row.value)}
-        </td>
-      </tr>
-    )];
-
-    // Green auditor note beneath data row
-    if (row.note) {
-      rowCounter++;
-      dataRows.push(
-        <tr key={i + "-note"}>
-          <td style={rowNumStyle}>{rowCounter + 3}</td>
-          <td colSpan={2} style={{
-            border: "1px solid #d0d0d0",
-            padding: isCompact ? "3px 6px 3px 16px" : "4px 8px 4px 20px",
-            fontSize: isCompact ? 9 : 11,
-            color: "#1a8c3a",
-            fontStyle: "italic",
-            fontWeight: 600,
-            background: "#f4fdf6",
-          }}>
-            {"\u270E " + row.note}
-          </td>
-        </tr>
-      );
-    }
-
-    return dataRows;
+          {row.cells.map((cell, ci) => (
+            <div key={ci} style={{
+              padding: cellPad,
+              fontWeight: row.bold ? 700 : 400,
+              fontSize: isCompact ? 9 : 11,
+              textAlign: COLUMNS[ci]?.align || "left",
+              fontFamily: COLUMNS[ci]?.align === "right" ? mono : f,
+              color: (typeof cell === "number" && cell < 0) ? "#c00" : "#1a1a1a",
+              borderRight: ci < COLUMNS.length - 1 ? "1px solid #eee" : "none",
+            }}>{typeof cell === "number" ? formatCurrency(cell) : cell}</div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  // Reset counter on each render
-  rowCounter = 0;
+  rowNum = 0;
 
   return (
-    <div style={{ flex: 1, background: "#fff", display: "flex", flexDirection: "column", overflow: "auto" }}>
-      {/* Excel ribbon bar */}
+    <div style={{ flex: 1, background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Ribbon */}
       <div style={{
-        background: "#217346", padding: isCompact ? "3px 12px" : "5px 12px",
-        display: "flex", alignItems: "center", gap: 14,
+        background: "#217346", padding: isCompact ? "3px 10px" : "4px 12px",
+        display: "flex", gap: 12, flexShrink: 0,
       }}>
-        {["File", "Home", "Insert", "Page Layout", "Formulas"].map((tab, i) => (
-          <span key={tab} style={{
-            color: i === 1 ? "white" : "rgba(255,255,255,0.7)",
-            fontSize: isCompact ? 10 : 11,
-            fontFamily: f, cursor: "pointer",
-            borderBottom: i === 1 ? "2px solid white" : "none",
-            paddingBottom: 2,
-          }}>{tab}</span>
+        {["File", "Home", "Insert", "Page Layout", "Formulas"].map((t, ti) => (
+          <span key={t} style={{
+            color: ti === 1 ? "white" : "rgba(255,255,255,0.6)",
+            fontSize: isCompact ? 8 : 10,
+            borderBottom: ti === 1 ? "1px solid white" : "none",
+            paddingBottom: 1,
+          }}>{t}</span>
         ))}
       </div>
       {/* Formula bar */}
       <div style={{
         display: "flex", borderBottom: "1px solid #d4d4d4",
-        background: "#f6f6f6", alignItems: "center",
+        background: "#f6f6f6", flexShrink: 0,
       }}>
         <div style={{
-          width: 48, borderRight: "1px solid #d4d4d4",
-          padding: "3px 6px", fontSize: 11, fontFamily: f,
-          color: "#333", textAlign: "center", background: "#fff",
+          width: 40, borderRight: "1px solid #d4d4d4",
+          padding: "2px 4px", fontSize: 9, color: "#333",
+          textAlign: "center", background: "#fff",
         }}>A1</div>
         <div style={{
-          flex: 1, padding: "3px 8px", fontSize: 11, fontFamily: f,
+          flex: 1, padding: "2px 6px", fontSize: 9,
           color: "#555", fontStyle: "italic",
         }}>{data.title}</div>
       </div>
-      {/* Spreadsheet grid */}
-      <div style={{ flex: 1, overflow: "auto", position: "relative" }}>
-        <table style={{
-          width: "100%", borderCollapse: "collapse",
-          fontFamily: f, fontSize: fs,
+      {/* Column letters */}
+      <div style={{ display: "flex", background: "#f0f0f0", flexShrink: 0 }}>
+        <div style={{
+          width: 24, minWidth: 24, background: "#e8e8e8",
+          borderRight: "1px solid #d0d0d0", borderBottom: "1px solid #d0d0d0",
+          padding: "2px 0", fontSize: 8, color: "#888", textAlign: "center",
+        }}></div>
+        <div style={{
+          flex: 1, display: "grid",
+          gridTemplateColumns: COLUMNS.map(c => c.width).join(" "),
+          borderBottom: "1px solid #d0d0d0",
         }}>
-          <thead>
-            <tr style={{ background: "#f0f0f0" }}>
-              <th style={{
-                width: 28, minWidth: 28, background: "#e8e8e8",
-                border: "1px solid #d0d0d0", padding: "3px 0",
-                fontSize: 10, color: "#888", fontWeight: 400,
-              }}></th>
-              <th style={{
-                border: "1px solid #d0d0d0", padding: "3px 4px",
-                fontSize: 10, color: "#888", fontWeight: 400,
-                textAlign: "center",
-              }}>A</th>
-              <th style={{
-                border: "1px solid #d0d0d0", padding: "3px 4px",
-                fontSize: 10, color: "#888", fontWeight: 400,
-                textAlign: "center", width: "38%",
-              }}>B</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Title row */}
-            <tr>
-              <td style={rowNumStyle}>1</td>
-              <td colSpan={2} style={{
-                border: "1px solid #d0d0d0",
-                padding: isCompact ? "4px 6px" : "6px 8px",
-                fontWeight: 700, fontSize: isCompact ? 11 : 13,
-                color: "#217346", background: "#f9fdf9",
-              }}>{data.title}</td>
-            </tr>
-            {/* Client line */}
-            <tr>
-              <td style={rowNumStyle}>2</td>
-              <td colSpan={2} style={{
-                border: "1px solid #d0d0d0",
-                padding: isCompact ? "3px 6px" : "4px 8px",
-                fontSize: isCompact ? 9 : 11, color: "#888",
-                fontStyle: "italic",
-              }}>Client: Sample Corp — Reporting Unit Alpha</td>
-            </tr>
-            {/* Header row */}
-            <tr style={{ background: "#f5f5f5" }}>
-              <td style={rowNumStyle}>3</td>
-              <td style={{
-                border: "1px solid #d0d0d0", padding: cellPad,
-                fontWeight: 700, fontSize: fs,
-                borderBottom: "2px solid #217346",
-              }}>Description</td>
-              <td style={{
-                border: "1px solid #d0d0d0", padding: cellPad,
-                fontWeight: 700, textAlign: "right", fontSize: fs,
-                borderBottom: "2px solid #217346",
-              }}>Amount</td>
-            </tr>
-            {/* Data rows */}
-            {data.rows.map((row, i) => renderRow(row, i))}
-            {/* Extra empty rows for realism */}
-            {[...Array(3)].map((_, i) => {
-              rowCounter++;
-              const rn = rowCounter + 3;
-              return (
-                <tr key={"empty-" + i}>
-                  <td style={rowNumStyle}>{rn}</td>
-                  <td style={{ border: "1px solid #d0d0d0", padding: isCompact ? "4px" : "6px" }}></td>
-                  <td style={{ border: "1px solid #d0d0d0", padding: isCompact ? "4px" : "6px" }}></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          {["A", "B", "C", "D"].map((l, li) => (
+            <div key={l} style={{
+              padding: "2px 4px", fontSize: 8, color: "#888",
+              textAlign: "center",
+              borderRight: li < 3 ? "1px solid #d0d0d0" : "none",
+            }}>{l}</div>
+          ))}
+        </div>
+      </div>
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {/* Title */}
+        <div style={{ display: "flex" }}>
+          <div style={rowNumStyle}>1</div>
+          <div style={{
+            flex: 1, padding: isCompact ? "4px 5px" : "5px 8px",
+            fontWeight: 700, fontSize: isCompact ? 10 : 12,
+            color: "#217346", background: "#f9fdf9",
+            borderBottom: "1px solid #d0d0d0",
+          }}>{data.title}</div>
+        </div>
+        {/* Subtitle */}
+        <div style={{ display: "flex" }}>
+          <div style={rowNumStyle}>2</div>
+          <div style={{
+            flex: 1, padding: isCompact ? "3px 5px" : "3px 8px",
+            fontSize: isCompact ? 8 : 10, color: "#888",
+            fontStyle: "italic", borderBottom: "1px solid #d0d0d0",
+          }}>{data.subtitle}</div>
+        </div>
+        {/* Column headers */}
+        <div style={{ display: "flex" }}>
+          <div style={{ ...rowNumStyle, borderBottom: "2px solid #217346" }}>3</div>
+          <div style={{
+            flex: 1, display: "grid",
+            gridTemplateColumns: COLUMNS.map(c => c.width).join(" "),
+            background: "#f5f5f5", borderBottom: "2px solid #217346",
+          }}>
+            {COLUMNS.map((col, ci) => (
+              <div key={ci} style={{
+                padding: isCompact ? "4px 5px" : "5px 8px",
+                fontWeight: 700, fontSize: isCompact ? 9 : 11,
+                textAlign: col.align || "left",
+                borderRight: ci < COLUMNS.length - 1 ? "1px solid #d0d0d0" : "none",
+              }}>{col.label}</div>
+            ))}
+          </div>
+        </div>
+        {/* Data rows */}
+        {data.rows.map((row, i) => renderRow(row, i))}
+        {/* Empty rows */}
+        {[...Array(2)].map((_, i) => {
+          rowNum++;
+          return (
+            <div key={"e" + i} style={{ display: "flex" }}>
+              <div style={rowNumStyle}>{rowNum + 3}</div>
+              <div style={{ flex: 1, height: isCompact ? 16 : 20, borderBottom: "1px solid #eee" }} />
+            </div>
+          );
+        })}
+
+        {/* KPMG Professional Judgment Framework */}
+        <div style={{ borderTop: "3px solid #00338D", background: "#f0f3f8" }}>
+          <div style={{
+            background: "#00338D", padding: isCompact ? "6px 10px" : "8px 12px",
+          }}>
+            <div style={{
+              color: "white", fontSize: isCompact ? 10 : 12,
+              fontWeight: 700, fontFamily: f, letterSpacing: 0.5,
+            }}>KPMG Professional Judgment Framework</div>
+          </div>
+          <div style={{
+            padding: isCompact ? "4px 10px" : "5px 12px",
+            background: "#e8edf4", borderBottom: "1px solid #c8d0dc",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <div style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: "#00338D", flexShrink: 0,
+            }} />
+            <span style={{
+              fontSize: isCompact ? 8 : 9, color: "#555",
+              fontStyle: "italic", fontFamily: f,
+            }}>Internal audit documentation — not prepared by client</span>
+          </div>
+          {data.judgment.map((item, ji) => (
+            <div key={ji} style={{ borderBottom: "1px solid #d0d6e0" }}>
+              <div style={{
+                padding: isCompact ? "6px 10px" : "8px 12px",
+                background: ji % 2 === 0 ? "#e2e8f0" : "#dce3ed",
+                fontWeight: 700, fontSize: isCompact ? 9 : 11,
+                color: "#00338D", fontFamily: f,
+                display: "flex", alignItems: "center", gap: 6,
+              }}>
+                <span style={{
+                  background: "#00338D", color: "white",
+                  width: isCompact ? 16 : 18, height: isCompact ? 16 : 18,
+                  borderRadius: "50%", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  fontSize: isCompact ? 8 : 9, fontWeight: 700, flexShrink: 0,
+                }}>{ji + 1}</span>
+                {item.step}
+              </div>
+              {item.content ? (
+                <div style={{
+                  padding: isCompact ? "6px 10px 8px 32px" : "8px 12px 10px 36px",
+                  background: "white",
+                }}>
+                  <div style={{
+                    fontSize: isCompact ? 9 : 11,
+                    color: "#333", lineHeight: 1.6, fontFamily: f,
+                  }}>{item.content}</div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: isCompact ? "10px 10px 10px 32px" : "12px 12px 12px 36px",
+                    background: "white", cursor: "text",
+                    minHeight: isCompact ? 48 : 56,
+                    borderLeft: "3px solid #0078D4",
+                    marginLeft: isCompact ? 10 : 12,
+                    marginRight: isCompact ? 10 : 12,
+                    marginTop: 4, marginBottom: 4,
+                    borderRadius: 2, position: "relative",
+                    boxShadow: "inset 0 1px 4px rgba(0,0,0,0.04)",
+                    transition: "box-shadow 0.15s, border-color 0.15s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.boxShadow = "inset 0 1px 6px rgba(0,120,212,0.12)";
+                    e.currentTarget.style.borderLeftColor = "#005a9e";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.boxShadow = "inset 0 1px 4px rgba(0,0,0,0.04)";
+                    e.currentTarget.style.borderLeftColor = "#0078D4";
+                  }}
+                >
+                  <div style={{
+                    fontSize: isCompact ? 9 : 11, color: "#aaa",
+                    fontStyle: "italic", fontFamily: f,
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
+                      <path d="M11.5 1.5L14.5 4.5L5 14H2V11L11.5 1.5Z" stroke="#0078D4" strokeWidth="1.5" strokeLinejoin="round"/>
+                    </svg>
+                    Click here to enter your response...
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       {/* Sheet tabs */}
       <div style={{
         borderTop: "1px solid #d4d4d4", background: "#e8e8e8",
-        padding: "0 8px", display: "flex", alignItems: "center",
-        height: isCompact ? 22 : 26,
+        padding: "0 6px", display: "flex", alignItems: "center",
+        height: isCompact ? 18 : 22, flexShrink: 0,
       }}>
         <div style={{
           background: "white", border: "1px solid #d0d0d0", borderBottom: "none",
-          padding: isCompact ? "2px 10px" : "3px 14px",
-          fontSize: 10, fontFamily: f, color: "#217346", fontWeight: 600,
-          marginTop: 1,
-        }}>Goodwill</div>
+          padding: "1px 8px", fontSize: 8, color: "#217346", fontWeight: 600,
+        }}>Allowance</div>
         <div style={{
           background: "#e0e0e0", border: "1px solid #d0d0d0", borderBottom: "none",
-          padding: isCompact ? "2px 10px" : "3px 14px",
-          fontSize: 10, fontFamily: f, color: "#888",
-          marginTop: 1, marginLeft: 2,
-        }}>Notes</div>
+          padding: "1px 8px", fontSize: 8, color: "#888", marginLeft: 2,
+        }}>Support</div>
       </div>
     </div>
   );
@@ -1026,13 +1019,14 @@ const openApp = useCallback((id) => {
 
       {/* ─── APP WINDOWS ─── */}
       {openWindows.includes("cy-folder") && (
-        <FolderWindow title="Current Year Audit Working Papers" fileName="CY Goodwill Impairment.xlsx"
+        <FolderWindow title="Current Year Audit Working Papers" fileName={`CY ${AUDIT_CY} Allowance for Doubtful Accounts.xlsx`}
+
           spreadsheetData={CY_DATA}
           onClose={() => closeApp("cy-folder")} zIndex={windowZ["cy-folder"] || 10}
           onFocus={() => focusApp("cy-folder")} layout={layout} />
       )}
       {openWindows.includes("py-folder") && (
-        <FolderWindow title="Prior Year Audit Working Papers" fileName="PY Goodwill Impairment.xlsx"
+        <FolderWindow title="Prior Year Audit Working Papers" fileName={`PY ${AUDIT_PY} Allowance for Doubtful Accounts.xlsx`}
           spreadsheetData={PY_DATA}
           onClose={() => closeApp("py-folder")} zIndex={windowZ["py-folder"] || 10}
           onFocus={() => focusApp("py-folder")} layout={layout} />
