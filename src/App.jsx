@@ -201,8 +201,7 @@ function formatCurrency(val) {
 }
 
 /* ─── SPREADSHEET VIEWER ──────────────────────────────────────────── */
-function SpreadsheetView({ data, layout }) {
-  const isCompact = layout === "landscape";
+function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  const isCompact = layout === "landscape";
   const f = '"Segoe UI", sans-serif';
   const mono = '"Consolas", "Courier New", monospace';
   const cellPad = isCompact ? "4px 5px" : "6px 8px";
@@ -427,38 +426,44 @@ function SpreadsheetView({ data, layout }) {
                   }}>{item.content}</div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    padding: isCompact ? "10px 10px 10px 32px" : "12px 12px 12px 36px",
-                    background: "white", cursor: "text",
-                    minHeight: isCompact ? 48 : 56,
-                    borderLeft: "3px solid #0078D4",
-                    marginLeft: isCompact ? 10 : 12,
-                    marginRight: isCompact ? 10 : 12,
-                    marginTop: 4, marginBottom: 4,
-                    borderRadius: 2, position: "relative",
-                    boxShadow: "inset 0 1px 4px rgba(0,0,0,0.04)",
-                    transition: "box-shadow 0.15s, border-color 0.15s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.boxShadow = "inset 0 1px 6px rgba(0,120,212,0.12)";
-                    e.currentTarget.style.borderLeftColor = "#005a9e";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.boxShadow = "inset 0 1px 4px rgba(0,0,0,0.04)";
-                    e.currentTarget.style.borderLeftColor = "#0078D4";
-                  }}
-                >
-                  <div style={{
-                    fontSize: isCompact ? 9 : 11, color: "#aaa",
-                    fontStyle: "italic", fontFamily: f,
-                    display: "flex", alignItems: "center", gap: 6,
-                  }}>
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
-                      <path d="M11.5 1.5L14.5 4.5L5 14H2V11L11.5 1.5Z" stroke="#0078D4" strokeWidth="1.5" strokeLinejoin="round"/>
-                    </svg>
-                    Click here to enter your response...
-                  </div>
+                <div style={{
+                  padding: 0,
+                  marginLeft: isCompact ? 10 : 12,
+                  marginRight: isCompact ? 10 : 12,
+                  marginTop: 4, marginBottom: 4,
+                }}>
+                  <textarea
+                    value={judgmentState?.[ji] || ""}
+                    onChange={e => {
+                      if (!onJudgmentChange) return;
+                      const updated = [...judgmentState];
+                      updated[ji] = e.target.value;
+                      onJudgmentChange(updated);
+                    }}
+                    placeholder="Click here to enter your response..."
+                    style={{
+                      width: "100%", minHeight: isCompact ? 48 : 56,
+                      padding: isCompact ? "8px 10px 8px 22px" : "10px 12px 10px 26px",
+                      background: "white", cursor: "text",
+                      borderLeft: "3px solid #0078D4",
+                      borderTop: "none", borderRight: "none", borderBottom: "none",
+                      borderRadius: 2, outline: "none",
+                      boxShadow: "inset 0 1px 4px rgba(0,0,0,0.04)",
+                      fontSize: isCompact ? 9 : 11,
+                      color: "#333", lineHeight: 1.6,
+                      fontFamily: f, resize: "vertical",
+                      boxSizing: "border-box",
+                      transition: "box-shadow 0.15s, border-color 0.15s",
+                    }}
+                    onFocus={e => {
+                      e.currentTarget.style.boxShadow = "inset 0 1px 6px rgba(0,120,212,0.12)";
+                      e.currentTarget.style.borderLeftColor = "#005a9e";
+                    }}
+                    onBlur={e => {
+                      e.currentTarget.style.boxShadow = "inset 0 1px 4px rgba(0,0,0,0.04)";
+                      e.currentTarget.style.borderLeftColor = "#0078D4";
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -485,15 +490,13 @@ function SpreadsheetView({ data, layout }) {
 }
 
 /* ─── FOLDER WINDOW ────────────────────────────────────────────────── */
-function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout }) {
-  const isCompact = layout === "landscape";
+function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout, judgmentState, onJudgmentChange }) {  const isCompact = layout === "landscape";
   const [fileOpen, setFileOpen] = useState(false);
 
   if (fileOpen) {
     return (
       <AppWindow title={fileName + " — Excel"} onClose={() => setFileOpen(false)} zIndex={zIndex} onFocus={onFocus} accentColor="#217346" layout={layout}>
-        <SpreadsheetView data={spreadsheetData} layout={layout} />
-      </AppWindow>
+<SpreadsheetView data={spreadsheetData} layout={layout} judgmentState={judgmentState} onJudgmentChange={onJudgmentChange} />      </AppWindow>
     );
   }
 
@@ -856,7 +859,7 @@ const openApp = useCallback((id) => {
 
   const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formattedDate = time.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
-
+const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
   // Countdown timer — 1 minute 5 seconds
   const TIMER_DURATION = 65;
   const [countdown, setCountdown] = useState(TIMER_DURATION);
@@ -1020,8 +1023,7 @@ const openApp = useCallback((id) => {
       {/* ─── APP WINDOWS ─── */}
       {openWindows.includes("cy-folder") && (
         <FolderWindow title="Current Year Audit Working Papers" fileName={`CY ${AUDIT_CY} Allowance for Doubtful Accounts.xlsx`}
-
-          spreadsheetData={CY_DATA}
+          spreadsheetData={CY_DATA} judgmentState={cyJudgment} onJudgmentChange={setCyJudgment}
           onClose={() => closeApp("cy-folder")} zIndex={windowZ["cy-folder"] || 10}
           onFocus={() => focusApp("cy-folder")} layout={layout} />
       )}
