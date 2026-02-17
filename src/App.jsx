@@ -938,11 +938,20 @@ export default function AuditDesktop() {
   const secs = countdown % 60;
   const countdownStr = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const timerColor = countdown <= 10 ? "#FF4444" : countdown <= 30 ? "#FFB020" : "#4EC94E";
-const timerDone = countdown === 0;
+  const timerDone = countdown === 0;
+    const [showPill, setShowPill] = useState(false);
+    const [showDialog, setShowDialog] = useState(false);
 
-  const extendTimer = useCallback(() => {
-    setCountdown(prev => prev > 0 ? prev + 600 : prev);
-  }, []);
+    const extendTimer = useCallback(() => {
+      setCountdown(prev => {
+        if (prev <= 0) return prev;
+        setShowPill(true);
+        setShowDialog(true);
+        setPulseKey(k => k + 1);
+        setTimeout(() => setShowPill(false), 2200);
+        return prev + 600;
+      });
+    }, []);
   return (
     <div style={{
       width: "100vw", height: "100vh", overflow: "hidden",
@@ -978,6 +987,16 @@ const timerDone = countdown === 0;
         @keyframes typingDots {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 1; }
+        }
+        @keyframes pillPop {
+          0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.8); }
+          15% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+          75% { opacity: 1; }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+        @keyframes dialogPop {
+          from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+          to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
       `}</style>
 
@@ -1230,6 +1249,65 @@ const timerDone = countdown === 0;
           </div>
         </div>
       </div>
+
+      {/* Minimal Pill notification */}
+      {showPill && (
+        <div style={{
+          position: "absolute", bottom: 52, left: "50%",
+          transform: "translateX(-50%)",
+          background: "#4EC94E", color: "#000",
+          padding: "6px 18px", borderRadius: 20,
+          fontSize: 13, fontWeight: 700,
+          fontFamily: '"Segoe UI", sans-serif',
+          boxShadow: "0 2px 12px rgba(78, 201, 78, 0.4)",
+          animation: "pillPop 2s ease-out forwards",
+          zIndex: 9999,
+        }}>
+          ⏱ +10 min approved
+        </div>
+      )}
+
+      {/* Dialog Box notification */}
+      {showDialog && (
+        <>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 9998 }} />
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "min(340px, 85vw)", background: "#f0f0f0", zIndex: 9999,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            fontFamily: '"Segoe UI", sans-serif',
+            border: "1px solid #888",
+            animation: "dialogPop 0.2s ease-out",
+          }}>
+            <div style={{
+              background: "#0078D4", padding: "8px 12px",
+              color: "white", fontSize: 12, fontWeight: 400,
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <span>Timer</span>
+              <button onClick={() => setShowDialog(false)} style={{
+                background: "none", border: "none", color: "white",
+                fontSize: 14, cursor: "pointer",
+              }}>✕</button>
+            </div>
+            <div style={{ padding: "20px 24px", display: "flex", gap: 16, alignItems: "flex-start" }}>
+              <div style={{ fontSize: 32, lineHeight: 1 }}>✅</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Time Added to Budget!</div>
+                <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>Your manager has approved an additional 10 minutes. The countdown timer has been updated.</div>
+              </div>
+            </div>
+            <div style={{ padding: "8px 24px 16px", textAlign: "right" }}>
+              <button onClick={() => setShowDialog(false)} style={{
+                background: "#e1e1e1", border: "1px solid #adadad",
+                padding: "6px 32px", fontSize: 13, cursor: "pointer",
+                fontFamily: '"Segoe UI", sans-serif',
+              }}>OK</button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
