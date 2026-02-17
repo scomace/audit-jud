@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { sendIM } from "./api";
 
 /* ─── RESPONSIVE HOOK ──────────────────────────────────────────────── */
 function useLayout() {
@@ -618,9 +619,9 @@ function EmailWindow({ onClose, zIndex, onFocus, layout }) {
 /* ─── IM WINDOW ────────────────────────────────────────────────────── */
 function IMWindow({ onClose, zIndex, onFocus, layout }) {
   const [msg, setMsg] = useState("");
+  const [typing, setTyping] = useState(false);
   const [messages, setMessages] = useState([
-    { from: "manager", text: "Hi — let me know if you have questions on the workpapers.", time: "9:02 AM" },
-    { from: "manager", text: "I'll be available until 5 PM today.", time: "9:02 AM" },
+    { from: "manager", text: "lmk if you need anything, slammed today", time: "9:02 AM" },
   ]);
   const chatRef = useRef(null);
   const isCompact = layout === "landscape";
@@ -629,12 +630,32 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, typing]);
 
-  const send = () => {
-    if (!msg.trim()) return;
-    setMessages(prev => [...prev, { from: "you", text: msg.trim(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+  const send = async () => {
+    if (!msg.trim() || typing) return;
+    const userMsg = { from: "you", text: msg.trim(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
     setMsg("");
+    setTyping(true);
+
+    try {
+      const reply = await sendIM(updated);
+      setMessages(prev => [...prev, {
+        from: "manager",
+        text: reply,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        from: "manager",
+        text: "sorry connection dropped, msg me again",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (
@@ -679,6 +700,22 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
             }}>{m.time}</div>
           </div>
         ))}
+        {typing && (
+          <div style={{ alignSelf: "flex-start", maxWidth: "80%" }}>
+            <div style={{
+              background: "#f0f0f0", padding: "8px 14px",
+              borderRadius: "14px 14px 14px 4px",
+              fontSize: 13, fontFamily: '"Segoe UI", sans-serif',
+              color: "#999",
+            }}>
+              <span style={{ animation: "typingDots 1.2s infinite" }}>●</span>
+              {" "}
+              <span style={{ animation: "typingDots 1.2s infinite 0.2s" }}>●</span>
+              {" "}
+              <span style={{ animation: "typingDots 1.2s infinite 0.4s" }}>●</span>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{
         padding: isCompact ? "4px 10px" : "8px 10px",
@@ -689,15 +726,17 @@ function IMWindow({ onClose, zIndex, onFocus, layout }) {
           value={msg} onChange={e => setMsg(e.target.value)}
           onKeyDown={e => e.key === "Enter" && send()}
           placeholder="Type a message..."
+          disabled={typing}
           style={{
             flex: 1, border: "1px solid #ddd", borderRadius: 4,
             padding: "8px 12px", fontSize: 16, outline: "none",
             fontFamily: '"Segoe UI", sans-serif',
+            opacity: typing ? 0.6 : 1,
           }}
         />
-        <button onClick={send} style={{
-          background: "#7B83EB", color: "white", border: "none",
-          borderRadius: 4, padding: "8px 16px", cursor: "pointer",
+        <button onClick={send} disabled={typing} style={{
+          background: typing ? "#aaa" : "#7B83EB", color: "white", border: "none",
+          borderRadius: 4, padding: "8px 16px", cursor: typing ? "default" : "pointer",
           fontFamily: '"Segoe UI", sans-serif', fontSize: 13, fontWeight: 600,
         }}>Send</button>
       </div>
@@ -903,6 +942,10 @@ export default function AuditDesktop() {
           0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(78, 201, 78, 0.5); }
           40% { transform: scale(1.15); box-shadow: 0 0 16px 4px rgba(78, 201, 78, 0.4); }
           100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(78, 201, 78, 0); }
+        }
+        @keyframes typingDots {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
         }
       `}</style>
 
