@@ -624,6 +624,33 @@ function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
     }
   }, [messages, typing]);
 
+   // Intro: manager starts typing, then sends kickoff message (runs on IM mount)
+  useEffect(() => {
+    // Show typing bubble briefly
+    setTyping(true);
+
+    const t = setTimeout(() => {
+      setMessages(prev => {
+        // Safety guard: don't duplicate if something already inserted
+        if (prev.length) return prev;
+
+        return [
+          ...prev,
+          {
+            from: "manager",
+            text:
+              "hey I need you to get started on the allowance for ecl asap. get this year's calc from the client and document our 5 professional judgment steps on it",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ];
+      });
+
+      setTyping(false);
+    }, 1100); // tweak duration if you want it shorter/longer
+
+    return () => clearTimeout(t);
+  }, []);
+
   const send = async () => {
     if (!msg.trim() || typing || blocked) return;
     const userMsg = { from: "you", text: msg.trim(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
@@ -810,7 +837,7 @@ export default function AuditDesktop() {
 
 const openApp = useCallback((id) => {
   setOpenWindows(prev => prev.includes(id) ? prev : [...prev, id]);
-  if (id === "cy-folder") setNotifPulse(false);
+  if (id === "email") setNotifPulse(false);
   setTopZ(z => {
     setWindowZ(prev => ({ ...prev, [id]: z + 1 }));
     return z + 1;
@@ -818,6 +845,10 @@ const openApp = useCallback((id) => {
   setStartOpen(false);
 }, []);
 
+  // Auto-open IM on initial load (plays the existing winOpen animation)
+  useEffect(() => {
+    openApp("im");
+  }, [openApp]);
 
   const closeApp = useCallback((id) => {
     setOpenWindows(prev => prev.filter(w => w !== id));
@@ -970,7 +1001,7 @@ const openApp = useCallback((id) => {
           >
             <div style={{ width: iconSize, height: iconSize, position: "relative" }}>
               {getIcon(item.type, iconSize)}
-              {item.id === "cy-folder" && notifPulse && (
+              {item.id === "email" && notifPulse && (
             <div style={{
               position: "absolute", top: -4, right: -4,
               width: 18, height: 18, borderRadius: "50%",
