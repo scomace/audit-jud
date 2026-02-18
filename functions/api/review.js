@@ -85,7 +85,9 @@ ${steps[4] || "(left blank)"}`;
     });
   }
 
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  // Gemini 2.5 Flash may return multiple parts (thinking + response)
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const raw = parts.map(p => p.text || "").join("\n");
 
   // Try multiple parsing strategies
   let parsed = null;
