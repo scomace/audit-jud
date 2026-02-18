@@ -490,7 +490,7 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
 }
 
 /* ─── FOLDER WINDOW ────────────────────────────────────────────────── */
-function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout, judgmentState, onJudgmentChange }) {  const isCompact = layout === "landscape";
+function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout, judgmentState, onJudgmentChange, docsReceived, fileNotif, onFileOpened }) {  const isCompact = layout === "landscape";
   const [fileOpen, setFileOpen] = useState(false);
 
   if (fileOpen) {
@@ -528,34 +528,57 @@ function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFoc
           <span>Desktop &gt; {title}</span>
         </div>
       </div>
-      <div style={{ padding: isCompact ? "8px 14px" : "16px 20px", background: "white" }}>
-        <div
-          onClick={() => setFileOpen(true)}
-          style={{
-            display: "flex", alignItems: "center", gap: 12,
-            padding: "10px 12px", borderRadius: 2,
-            cursor: "pointer", border: "1px solid transparent",
-            transition: "all 0.1s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#e5f3ff"; e.currentTarget.style.border = "1px solid #cce4f7"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.border = "1px solid transparent"; }}
-        >
-          <div style={{ width: 36, height: 36, flexShrink: 0 }}><ExcelIcon /></div>
-          <div>
-            <div style={{ fontSize: 13, fontFamily: '"Segoe UI", sans-serif', color: "#1a1a1a" }}>{fileName}</div>
-            <div style={{ fontSize: 11, color: "#888", fontFamily: '"Segoe UI", sans-serif', marginTop: 2 }}>
-              Microsoft Excel Worksheet · 247 KB
+      <div style={{ padding: isCompact ? "8px 14px" : "16px 20px", background: "white", flex: 1 }}>
+        {docsReceived === false ? (
+          <div style={{
+            textAlign: "center", padding: "30px 16px",
+            color: "#aaa", fontSize: 12,
+            fontFamily: '"Segoe UI", sans-serif',
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📂</div>
+            This folder is empty.
+            <br />Request documents from the client via Outlook.
+          </div>
+        ) : (
+          <div
+            onClick={() => { setFileOpen(true); if (onFileOpened) onFileOpened(); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 12px", borderRadius: 2,
+              cursor: "pointer", border: "1px solid transparent",
+              transition: "all 0.1s", position: "relative",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#e5f3ff"; e.currentTarget.style.border = "1px solid #cce4f7"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.border = "1px solid transparent"; }}
+          >
+            <div style={{ width: 36, height: 36, flexShrink: 0, position: "relative" }}>
+              <ExcelIcon />
+              {fileNotif && (
+                <div style={{
+                  position: "absolute", top: -4, right: -4,
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: "#E8453C", border: "2px solid white",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "white", fontSize: 8, fontWeight: 700,
+                  animation: "notifBounce 2s infinite, notifGlow 2s infinite",
+                }}>!</div>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontFamily: '"Segoe UI", sans-serif', color: "#1a1a1a" }}>{fileName}</div>
+              <div style={{ fontSize: 11, color: "#888", fontFamily: '"Segoe UI", sans-serif', marginTop: 2 }}>
+                Microsoft Excel Worksheet · 247 KB
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </AppWindow>
   );
 }
 
 /* ─── EMAIL WINDOW (OUTLOOK SPLIT PANE) ────────────────────────────── */
-function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailThread }) {
-  const [selected, setSelected] = useState(0);
+function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailThread, onDocsReceived }) {  const [selected, setSelected] = useState(0);
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -586,8 +609,11 @@ function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailTh
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         body: reply,
       };
-      setEmailThread(prev => [...prev, clientMsg]);
+setEmailThread(prev => [...prev, clientMsg]);
       setSelected(updated.length);
+      if (/attach|available in your files|enclosed/i.test(reply) && onDocsReceived) {
+        onDocsReceived();
+      }
     } catch {
       const errMsg = {
         from: "client", name: "System", to: "Audit Staff",
@@ -990,8 +1016,8 @@ export default function AuditDesktop() {
 
 const openApp = useCallback((id) => {
   setOpenWindows(prev => prev.includes(id) ? prev : [...prev, id]);
-  if (id === "email") setNotifPulse(false);
-  setTopZ(z => {
+if (id === "email") setNotifPulse(false);
+  if (id === "cy-folder") setCyFolderNotif(false);  setTopZ(z => {
     setWindowZ(prev => ({ ...prev, [id]: z + 1 }));
     return z + 1;
   });
@@ -1017,8 +1043,16 @@ const openApp = useCallback((id) => {
   const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formattedDate = time.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
 const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
-  const [emailThread, setEmailThread] = useState([]);
-  // Countdown timer — 1 minute 5 seconds
+const [emailThread, setEmailThread] = useState([]);
+  const [docsReceived, setDocsReceived] = useState(false);
+  const [cyFolderNotif, setCyFolderNotif] = useState(false);
+  const [cyFileNotif, setCyFileNotif] = useState(false);
+
+  const onDocsReceived = useCallback(() => {
+    setDocsReceived(true);
+    setCyFolderNotif(true);
+    setCyFileNotif(true);
+  }, []);  // Countdown timer — 1 minute 5 seconds
   const TIMER_DURATION = 65;
   const [countdown, setCountdown] = useState(TIMER_DURATION);
   const [pulseKey, setPulseKey] = useState(1); // changing key forces remount = animation restart
@@ -1165,6 +1199,16 @@ const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
               animation: "notifBounce 2s infinite, notifGlow 2s infinite",
             }}>!</div>
           )}
+              {item.id === "cy-folder" && cyFolderNotif && (
+            <div style={{
+              position: "absolute", top: -4, right: -4,
+              width: 18, height: 18, borderRadius: "50%",
+              background: "#E8453C", border: "2px solid rgba(255,255,255,0.9)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "white", fontSize: 9, fontWeight: 700,
+              animation: "notifBounce 2s infinite, notifGlow 2s infinite",
+            }}>!</div>
+          )}
 
             </div>
             <span style={{
@@ -1183,7 +1227,8 @@ const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
         <FolderWindow title="Current Year Audit Working Papers" fileName={`CY ${AUDIT_CY} Allowance for Doubtful Accounts.xlsx`}
           spreadsheetData={CY_DATA} judgmentState={cyJudgment} onJudgmentChange={setCyJudgment}
           onClose={() => closeApp("cy-folder")} zIndex={windowZ["cy-folder"] || 10}
-          onFocus={() => focusApp("cy-folder")} layout={layout} />
+          onFocus={() => focusApp("cy-folder")} layout={layout}
+          docsReceived={docsReceived} fileNotif={cyFileNotif} onFileOpened={() => setCyFileNotif(false)} />
       )}
       {openWindows.includes("py-folder") && (
         <FolderWindow title="Prior Year Audit Working Papers" fileName={`PY ${AUDIT_PY} Allowance for Doubtful Accounts.xlsx`}
@@ -1192,9 +1237,10 @@ const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
           onFocus={() => focusApp("py-folder")} layout={layout} />
       )}
 {openWindows.includes("email") && (
-        <EmailWindow onClose={() => closeApp("email")} zIndex={windowZ["email"] || 10}
+       <EmailWindow onClose={() => closeApp("email")} zIndex={windowZ["email"] || 10}
           onFocus={() => focusApp("email")} layout={layout}
-          emailThread={emailThread} setEmailThread={setEmailThread} />
+          emailThread={emailThread} setEmailThread={setEmailThread}
+          onDocsReceived={onDocsReceived} />
       )}
       {openWindows.includes("im") && (
         <IMWindow onClose={() => closeApp("im")} zIndex={windowZ["im"] || 10}
