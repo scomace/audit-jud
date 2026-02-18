@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { sendIM } from "./api";
+import { sendIM, sendEmail } from "./api";
 
 /* ─── RESPONSIVE HOOK ──────────────────────────────────────────────── */
 function useLayout() {
@@ -553,53 +553,210 @@ function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFoc
   );
 }
 
-/* ─── EMAIL COMPOSE WINDOW ─────────────────────────────────────────── */
-function EmailWindow({ onClose, zIndex, onFocus, layout }) {
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+/* ─── EMAIL WINDOW (OUTLOOK SPLIT PANE) ────────────────────────────── */
+function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailThread }) {
+  const [selected, setSelected] = useState(0);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
   const isCompact = layout === "landscape";
+  const f = '"Segoe UI", sans-serif';
 
-  const fieldStyle = {
-    width: "100%", border: "none", borderBottom: "1px solid #e8e8e8",
-    padding: isCompact ? "6px 14px" : "10px 14px",
-    fontSize: 16, fontFamily: '"Segoe UI", sans-serif',
-    outline: "none", background: "transparent", boxSizing: "border-box",
+  const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const handleSend = async () => {
+    if (!draft.trim() || sending) return;
+    const userMsg = {
+      from: "you", name: "Audit Staff", to: "Gordon Whitfield",
+      subject: emailThread.length === 0 ? "Document Request" : "RE: " + (emailThread[0]?.subject || "Document Request"),
+      time: now(), body: draft.trim(),
+    };
+    const updated = [...emailThread, userMsg];
+    setEmailThread(updated);
+    setDraft("");
+    setComposing(false);
+    setSending(true);
+    setSelected(updated.length - 1);
+
+    try {
+      const reply = await sendEmail(updated);
+      const clientMsg = {
+        from: "client", name: "Gordon Whitfield", to: "Audit Staff",
+        subject: "RE: " + (userMsg.subject.replace(/^RE:\s*/i, "")),
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        body: reply,
+      };
+      setEmailThread(prev => [...prev, clientMsg]);
+      setSelected(updated.length);
+    } catch {
+      const errMsg = {
+        from: "client", name: "System", to: "Audit Staff",
+        subject: "Delivery Failed",
+        time: now(),
+        body: "Your message could not be delivered. Please try again.",
+      };
+      setEmailThread(prev => [...prev, errMsg]);
+    } finally {
+      setSending(false);
+    }
   };
 
+  const msgs = emailThread;
+  const sel = msgs[selected] || null;
+
   return (
-    <AppWindow title="Outlook — New Message" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#0078D4" layout={layout}>
+    <AppWindow title="Outlook — Inbox" onClose={onClose} zIndex={zIndex} onFocus={onFocus} accentColor="#0078D4" layout={layout}>
+      {/* Toolbar */}
       <div style={{
-        padding: isCompact ? "4px 14px" : "8px 14px",
-        borderBottom: "1px solid #e8e8e8",
-        display: "flex", gap: 6, background: "#f9f9f9",
+        padding: "6px 12px", borderBottom: "1px solid #e0e0e0",
+        background: "#f9f9f9", display: "flex", gap: 6, flexShrink: 0,
       }}>
-        <button style={{
+        <button onClick={() => { setComposing(true); setDraft(""); }} style={{
           background: "#0078D4", color: "white", border: "none",
-          padding: "5px 18px", fontSize: 12, cursor: "pointer",
-          fontFamily: '"Segoe UI", sans-serif', fontWeight: 600,
-        }}>Send</button>
+          padding: "5px 14px", fontSize: 11, fontWeight: 600,
+          cursor: "pointer", fontFamily: f,
+        }}>{msgs.length === 0 ? "New Email" : "Reply"}</button>
         <button style={{
-          background: "transparent", color: "#555", border: "1px solid #ccc",
-          padding: "5px 12px", fontSize: 12, cursor: "pointer",
-          fontFamily: '"Segoe UI", sans-serif',
-        }}>Attach</button>
-        <button style={{
-          background: "transparent", color: "#555", border: "1px solid #ccc",
-          padding: "5px 12px", fontSize: 12, cursor: "pointer",
-          fontFamily: '"Segoe UI", sans-serif',
-        }}>Discard</button>
+          background: "none", border: "1px solid #ccc",
+          padding: "5px 10px", fontSize: 11, cursor: "pointer",
+          fontFamily: f, color: "#555",
+        }}>Delete</button>
+        {sending && (
+          <span style={{ fontSize: 11, color: "#888", fontFamily: f, alignSelf: "center", marginLeft: 8 }}>
+            Sending...
+          </span>
+        )}
       </div>
-      <input placeholder="To: client@samplecorp.com" value={to} onChange={e => setTo(e.target.value)} style={fieldStyle} />
-      <input placeholder="Subject" value={subject} onChange={e => setSubject(e.target.value)} style={fieldStyle} />
-      <textarea
-        placeholder="Compose your message..."
-        value={body} onChange={e => setBody(e.target.value)}
-        style={{
-          ...fieldStyle, flex: 1, minHeight: isCompact ? 60 : 160,
-          resize: "none", borderBottom: "none", padding: 14,
-        }}
-      />
+
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Message list */}
+        <div style={{
+          width: "40%", borderRight: "1px solid #e0e0e0",
+          overflowY: "auto", background: "white", flexShrink: 0,
+        }}>
+          {msgs.length === 0 ? (
+            <div style={{
+              padding: "30px 16px", textAlign: "center",
+              color: "#aaa", fontSize: 12, fontFamily: f,
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
+              No messages yet.
+              <br />Click "New Email" to write to the client.
+            </div>
+          ) : (
+            msgs.map((msg, i) => (
+              <div key={i} onClick={() => { setSelected(i); setComposing(false); }} style={{
+                padding: "10px 12px", cursor: "pointer",
+                borderBottom: "1px solid #f0f0f0",
+                background: selected === i ? "#e5f3ff" : "white",
+                borderLeft: selected === i ? "3px solid #0078D4" : "3px solid transparent",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{
+                    fontSize: 12, fontWeight: selected === i ? 700 : 600,
+                    color: "#1a1a1a", fontFamily: f,
+                  }}>{msg.name}</span>
+                  <span style={{ fontSize: 9, color: "#888", fontFamily: f }}>{msg.time}</span>
+                </div>
+                <div style={{
+                  fontSize: 11, color: "#555", fontWeight: 600,
+                  marginTop: 2, fontFamily: f,
+                }}>{msg.subject}</div>
+                <div style={{
+                  fontSize: 10, color: "#888", marginTop: 2,
+                  whiteSpace: "nowrap", overflow: "hidden",
+                  textOverflow: "ellipsis", fontFamily: f,
+                }}>{msg.body.split("\n")[0]}</div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Reading pane / Compose */}
+        <div style={{
+          flex: 1, overflowY: "auto",
+          display: "flex", flexDirection: "column",
+          background: "white",
+        }}>
+          {composing ? (
+            <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column" }}>
+              <div style={{
+                fontSize: 11, color: "#888", fontFamily: f, marginBottom: 4,
+              }}>To: Gordon Whitfield &lt;g.whitfield@samplecorp.com&gt;</div>
+              <div style={{
+                fontSize: 11, color: "#888", fontFamily: f, marginBottom: 10,
+                paddingBottom: 8, borderBottom: "1px solid #eee",
+              }}>Subject: {msgs.length === 0 ? "Document Request" : "RE: " + (msgs[0]?.subject || "Document Request").replace(/^RE:\s*/i, "")}</div>
+              <textarea
+                value={draft} onChange={e => setDraft(e.target.value)}
+                placeholder="Compose your message..."
+                disabled={sending}
+                autoFocus
+                style={{
+                  flex: 1, border: "1px solid #ddd", borderRadius: 4,
+                  padding: 10, fontSize: 13, fontFamily: f,
+                  outline: "none", resize: "none", boxSizing: "border-box",
+                  minHeight: isCompact ? 60 : 100,
+                  opacity: sending ? 0.5 : 1,
+                }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={handleSend} disabled={sending || !draft.trim()} style={{
+                  background: sending ? "#aaa" : "#0078D4", color: "white",
+                  border: "none", padding: "6px 18px", borderRadius: 4,
+                  fontSize: 12, fontWeight: 600, cursor: sending ? "default" : "pointer",
+                  fontFamily: f,
+                }}>Send</button>
+                <button onClick={() => { setComposing(false); setDraft(""); }} style={{
+                  background: "none", border: "1px solid #ccc",
+                  padding: "6px 14px", borderRadius: 4, fontSize: 12,
+                  cursor: "pointer", fontFamily: f, color: "#555",
+                }}>Cancel</button>
+              </div>
+            </div>
+          ) : sel ? (
+            <div style={{ padding: 16 }}>
+              <div style={{
+                fontSize: 15, fontWeight: 600, marginBottom: 10,
+                fontFamily: f, color: "#1a1a1a",
+              }}>{sel.subject}</div>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                marginBottom: 14,
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                  background: sel.from === "you" ? "#0078D4" : "#E8453C",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "white", fontSize: 14, fontWeight: 600, fontFamily: f,
+                }}>{sel.name.charAt(0)}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, fontFamily: f }}>{sel.name}</div>
+                  <div style={{ fontSize: 10, color: "#888", fontFamily: f }}>
+                    To: {sel.to} · {sel.time}
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: 12, color: "#333", lineHeight: 1.7,
+                whiteSpace: "pre-wrap", fontFamily: f,
+              }}>{sel.body}</div>
+            </div>
+          ) : (
+            <div style={{
+              flex: 1, display: "flex", alignItems: "center",
+              justifyContent: "center", color: "#bbb",
+              fontSize: 12, fontFamily: f, textAlign: "center", padding: 20,
+            }}>
+              <div>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>✉️</div>
+                Select a message to read
+                <br />or compose a new email
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </AppWindow>
   );
 }
@@ -860,6 +1017,7 @@ const openApp = useCallback((id) => {
   const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formattedDate = time.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
 const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
+  const [emailThread, setEmailThread] = useState([]);
   // Countdown timer — 1 minute 5 seconds
   const TIMER_DURATION = 65;
   const [countdown, setCountdown] = useState(TIMER_DURATION);
@@ -1033,9 +1191,10 @@ const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
           onClose={() => closeApp("py-folder")} zIndex={windowZ["py-folder"] || 10}
           onFocus={() => focusApp("py-folder")} layout={layout} />
       )}
-      {openWindows.includes("email") && (
+{openWindows.includes("email") && (
         <EmailWindow onClose={() => closeApp("email")} zIndex={windowZ["email"] || 10}
-          onFocus={() => focusApp("email")} layout={layout} />
+          onFocus={() => focusApp("email")} layout={layout}
+          emailThread={emailThread} setEmailThread={setEmailThread} />
       )}
       {openWindows.includes("im") && (
         <IMWindow onClose={() => closeApp("im")} zIndex={windowZ["im"] || 10}
@@ -1240,8 +1399,8 @@ const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
             <div style={{ padding: "20px 24px", display: "flex", gap: 16, alignItems: "flex-start" }}>
               <div style={{ fontSize: 32, lineHeight: 1 }}>✅</div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Time Added to Budget!</div>
-                <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>Your manager has approved an additional 10 minutes. The countdown timer has been updated.</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Bias Eliminated: Time Added to Budget!</div>
+                <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>Your senior manager has approved an additional 10 minutes to allow for more robust professional judgment. The budget countdown timer has been updated.</div>
               </div>
             </div>
             <div style={{ padding: "8px 24px 16px", textAlign: "right" }}>
