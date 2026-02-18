@@ -115,7 +115,7 @@ ${steps[4] || "(left blank)"}`;
     };
   }
 
-  return new Response(JSON.stringify({ results: parsed }), {
+  return new Response(JSON.stringify({ results: parsed, debug_raw: raw, debug_parts: parts }), {
     headers: { "Content-Type": "application/json" },
   });
 }
