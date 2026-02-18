@@ -1042,7 +1042,7 @@ function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
           {
             from: "manager",
             text:
-              "hey I need you to get started on the allowance for ecl asap. get this year's calc from the client and document our 5 professional judgment steps on it",
+              "hey I need you to get started on the allowance for expected credit losses asap. get this year's calc from the client and document our 5 professional judgment steps on it",
             time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           },
         ];
