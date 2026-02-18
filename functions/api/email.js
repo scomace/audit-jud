@@ -35,8 +35,13 @@ SPECIFIC BEHAVIORS:
 Sincerely,
 Gordon
 
-CRITICAL: You MUST always end with exactly "Sincerely,\\nGordon". No last name. No title. Just "Sincerely," on one line and "Gordon" on the next.`;
+CRITICAL: You MUST always end with exactly "Sincerely,\\nGordon". No last name. No title. Just "Sincerely," on one line and "Gordon" on the next.
 
+RESPONSE PREFIX REQUIREMENT:
+You MUST start EVERY response with exactly one of these prefixes:
+- [ATTACHED] — if your response confirms you are providing/attaching the requested receivables or allowance documentation
+- [NO_DOCS] — for all other responses (confusion, chiding, clarification, etc.)
+This is a parsing requirement. The prefix will be stripped before display.`;
   const geminiMessages = [];
 
   for (const msg of messages) {
@@ -74,10 +79,13 @@ CRITICAL: You MUST always end with exactly "Sincerely,\\nGordon". No last name. 
     });
   }
 
-  const reply =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sincerely,\nGordon";
+const raw =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text || "[NO_DOCS] Sincerely,\nGordon";
 
-  return new Response(JSON.stringify({ reply }), {
+  const docsAttached = raw.startsWith("[ATTACHED]");
+  const reply = raw.replace(/^\[(ATTACHED|NO_DOCS)\]\s*/, "");
+
+  return new Response(JSON.stringify({ reply, docsAttached }), {
     headers: { "Content-Type": "application/json" },
   });
 }

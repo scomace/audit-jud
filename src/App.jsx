@@ -602,16 +602,16 @@ function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailTh
     setSelected(updated.length - 1);
 
     try {
-      const reply = await sendEmail(updated);
+const { reply, docsAttached } = await sendEmail(updated);
       const clientMsg = {
         from: "client", name: "Gordon Whitfield", to: "Audit Staff",
         subject: "RE: " + (userMsg.subject.replace(/^RE:\s*/i, "")),
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         body: reply,
       };
-setEmailThread(prev => [...prev, clientMsg]);
+      setEmailThread(prev => [...prev, clientMsg]);
       setSelected(updated.length);
-      if (/attach|available in your files|enclosed/i.test(reply) && onDocsReceived) {
+      if (docsAttached && onDocsReceived) {
         onDocsReceived();
       }
     } catch {
@@ -1436,7 +1436,7 @@ const [emailThread, setEmailThread] = useState([]);
               color: "white", fontSize: 12, fontWeight: 400,
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <span>Timer</span>
+              <span>Bias Eliminated!</span>
               <button onClick={() => setShowDialog(false)} style={{
                 background: "none", border: "none", color: "white",
                 fontSize: 14, cursor: "pointer",

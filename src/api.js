@@ -17,5 +17,4 @@ export async function sendEmail(messages) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
-  return data.reply;
-}
+return { reply: data.reply, docsAttached: data.docsAttached };}
