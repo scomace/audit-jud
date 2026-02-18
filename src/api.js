@@ -17,4 +17,16 @@ export async function sendEmail(messages) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
-return { reply: data.reply, docsAttached: data.docsAttached };}
+  return { reply: data.reply, docsAttached: data.docsAttached };
+}
+
+export async function submitReview(steps) {
+  const res = await fetch("/api/review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ steps }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data.results;
+}

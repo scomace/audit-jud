@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { sendIM, sendEmail } from "./api";
+import { sendIM, sendEmail, submitReview } from "./api";
 
 /* ─── RESPONSIVE HOOK ──────────────────────────────────────────────── */
 function useLayout() {
@@ -184,11 +184,11 @@ const PY_DATA = {
     { cells: ["Total A/R", 561700, "", 29655], bold: true, topBorder: true },
   ],
   judgment: [
-    { step: "Step 1: Clarify Issues & Objectives", content: "To assess the existence and valuation of accounts receivable by analyzing the allowance for estimated credit losses. Specifically, evaluate whether management's reserve rates applied to each aging bucket are reasonable and whether the total recorded allowance is adequate." },
-    { step: "Step 2: Consider Alternatives", content: "Considered three approaches: (1) Accept client's rates as consistent with prior year, (2) independently recalculate rates using historical write-off data from the past three years, or (3) benchmark against industry loss rates for similar-sized distributors. Elected to perform approach (2) and corroborate with (1)." },
-    { step: "Step 3: Gather & Evaluate Information", content: `Obtained A/R aging subledger as of December 31, ${AUDIT_PY} and agreed to GL without exception. Obtained 3-year write-off history from client controller. Historical write-off rates by bucket: Current 0.8%, 31\u201360 days 4.2%, 61\u201390 days 13.1%, 91\u2013120 days 31.7%, >120 days 72.4%. Client's applied rates are slightly conservative relative to historical experience, which is appropriate given current economic conditions. No individually significant receivables identified requiring specific reserve.` },
-    { step: "Step 4: Reach Conclusion", content: `The client's recorded allowance is reasonable. Applied rates are consistent with historical write-off experience and are appropriately conservative. The total calculated reserve of $29,655 is in line with management's recorded balance. No material misstatement identified. The allowance for doubtful accounts is fairly stated as of December 31, ${AUDIT_PY}.` },
-    { step: "Step 5: Articulate & Document Rationale", content: `We conclude the allowance is reasonable based on: (a) rates are supported by 3-year historical write-off data, (b) rates are slightly conservative versus historical actuals, which is appropriate, (c) no concentration risk or individually significant past-due balances were identified, and (d) methodology is consistent with the prior year. No adjustment proposed. Workpaper reviewed and approved \u2014 S. Mitchell, Senior Manager.` },
+    { step: "Step 1: Clarify Issues & Objectives", content: "To assess the existence of accounts receivable by analyzing the allowance for estimated credit losses." },
+    { step: "Step 2: Consider Alternatives", content: "Considered three approaches: (1) Accept client's rates as consistent with prior year, (2) independently recalculate rates using historical write-off data from the past three years, or (3) benchmark against industry loss rates for similar-sized companies. Elected to perform approach (1)." },
+    { step: "Step 3: Gather & Evaluate Information", content: `Obtained A/R aging subledger as of December 31, ${AUDIT_PY} and agreed to GL without exception. Agreed rates from current year to rates from prior year.` },
+    { step: "Step 4: Reach Conclusion", content: `No issues noted. Existence of accounts receivable appears reasonable, and the recorded allowance for estimated credit losses is reasonable.` },
+    { step: "Step 5: Articulate & Document Rationale", content: `We conclude the allowance is reasonable. Applied rates are consistent with last year's rates. The total calculated reserve of $29,655 is in line with management's recorded balance. No material misstatement identified. The allowance for expected credit losses appears to be fairly stated as of December 31, ${AUDIT_PY}.` },
   ],
 };
 
@@ -200,8 +200,135 @@ function formatCurrency(val) {
   return neg ? "(" + str + ")" : str;
 }
 
+/* ─── REVIEW FEEDBACK (all text is hardcoded, not from LLM) ────────── */
+const STEP_FEEDBACK = {
+  step1: {
+    valuation: {
+      pass: "You correctly identified that valuation of accounts receivable is the key assertion being tested.",
+      fail: "In this scenario, valuation (rather than just existence) is the primary assertion being tested for accounts receivable. Your objective should reflect this.",
+    },
+    completeness: {
+      pass: "You also correctly noted that completeness of the allowance for expected credit losses is being tested.",
+      fail: "It would have been helpful to note that completeness of the allowance for expected credit losses is also being tested.",
+    },
+    materiality: {
+      pass: "Providing a specific materiality threshold gives you a clear benchmark to evaluate against in Step 4.",
+      fail: "Providing a specific range or threshold related to materiality (% or $) would strengthen your objective, as you can clearly refer to this in Step 4 to determine whether the analysis was successful.",
+    },
+  },
+  step2: {
+    accept_rates: { label: "accepting client's rates as consistent with prior year", pass: "Comparing client rates to prior year is a solid baseline approach." },
+    historical_writeoff: { label: "independently recalculating rates using historical write-off data", pass: "Independently recalculating rates from historical write-off data is a strong analytical procedure." },
+    industry_benchmark: { label: "benchmarking against industry loss rates for similar-sized companies", pass: "Benchmarking against industry loss rates provides valuable external context." },
+  },
+  step3: {
+    consistent: {
+      pass: "Your procedures are well-aligned with the approaches you identified in Step 2, demonstrating a logical connection between your planned approach and execution.",
+      fail: "The procedures you described do not appear to be consistent with the approaches you selected in Step 2. Ensure that the information you gather directly supports the alternatives you chose to pursue.",
+    },
+  },
+  step4: {
+    links_to_objective: {
+      pass: "Your conclusion effectively ties back to the objective established in Step 1, clearly demonstrating whether the testing objective was met.",
+      fail: "Your conclusion should directly reference the objective from Step 1 to demonstrate whether the testing objective was met. Without this linkage, it is difficult to determine if the audit procedure achieved its intended purpose.",
+    },
+  },
+  step5: {
+    summarizes: {
+      pass: "You provided a comprehensive summary that ties together the work performed across all steps.",
+      fail: "This step should provide a complete summary of all work performed — connecting your objective, alternatives considered, procedures performed, and conclusion into a cohesive rationale.",
+    },
+  },
+};
+
+function buildFeedback(results) {
+  if (!results) return null;
+  const feedback = [];
+
+  // Step 1
+  const s1 = results.step1 || {};
+  feedback.push({
+    step: 1, score: [s1.valuation, s1.completeness, s1.materiality].filter(Boolean).length, total: 3,
+    text: [
+      s1.valuation ? STEP_FEEDBACK.step1.valuation.pass : STEP_FEEDBACK.step1.valuation.fail,
+      s1.completeness ? STEP_FEEDBACK.step1.completeness.pass : STEP_FEEDBACK.step1.completeness.fail,
+      s1.materiality ? STEP_FEEDBACK.step1.materiality.pass : STEP_FEEDBACK.step1.materiality.fail,
+    ].join(" "),
+    criteria: [
+      { label: "Valuation assertion identified", met: !!s1.valuation },
+      { label: "Completeness of ECL noted", met: !!s1.completeness },
+      { label: "Materiality threshold specified", met: !!s1.materiality },
+    ],
+  });
+
+  // Step 2
+  const s2 = results.step2 || {};
+  const approaches = [s2.accept_rates, s2.historical_writeoff, s2.industry_benchmark];
+  const count = approaches.filter(Boolean).length;
+  const s2parts = [];
+  if (count === 3) s2parts.push("You identified all three common approaches — excellent critical thinking.");
+  else if (count === 2) s2parts.push("You identified two valid approaches, which demonstrates good professional judgment.");
+  else if (count === 1) s2parts.push("You only identified one approach. Professional judgment requires considering at least two alternatives.");
+  else s2parts.push("You did not identify any of the expected approaches.");
+
+  const included = [], missed = [];
+  for (const key of ["accept_rates", "historical_writeoff", "industry_benchmark"]) {
+    if (s2[key]) included.push(STEP_FEEDBACK.step2[key].pass);
+    else missed.push(STEP_FEEDBACK.step2[key].label);
+  }
+  if (included.length) s2parts.push(included.join(" "));
+  if (missed.length && count < 3) s2parts.push("Your response would be further strengthened by also considering: " + missed.join("; ") + ".");
+
+  feedback.push({
+    step: 2, score: Math.min(count, 2), total: 2,
+    text: s2parts.join(" "),
+    criteria: [
+      { label: "Accept client rates vs. PY", met: !!s2.accept_rates },
+      { label: "Historical write-off recalculation", met: !!s2.historical_writeoff },
+      { label: "Industry benchmark comparison", met: !!s2.industry_benchmark },
+    ],
+  });
+
+  // Step 3
+  const s3 = results.step3 || {};
+  feedback.push({
+    step: 3, score: s3.consistent ? 1 : 0, total: 1,
+    text: s3.consistent ? STEP_FEEDBACK.step3.consistent.pass : STEP_FEEDBACK.step3.consistent.fail,
+    criteria: [{ label: "Procedures consistent with Step 2", met: !!s3.consistent }],
+  });
+
+  // Step 4
+  const s4 = results.step4 || {};
+  feedback.push({
+    step: 4, score: s4.links_to_objective ? 1 : 0, total: 1,
+    text: s4.links_to_objective ? STEP_FEEDBACK.step4.links_to_objective.pass : STEP_FEEDBACK.step4.links_to_objective.fail,
+    criteria: [{ label: "Conclusion links to Step 1 objective", met: !!s4.links_to_objective }],
+  });
+
+  // Step 5
+  const s5 = results.step5 || {};
+  feedback.push({
+    step: 5, score: s5.summarizes ? 1 : 0, total: 1,
+    text: s5.summarizes ? STEP_FEEDBACK.step5.summarizes.pass : STEP_FEEDBACK.step5.summarizes.fail,
+    criteria: [{ label: "Comprehensive summary provided", met: !!s5.summarizes }],
+  });
+
+  return feedback;
+}
+
+function getManagerComment(feedback) {
+  const earned = feedback.reduce((s, f) => s + f.score, 0);
+  const possible = feedback.reduce((s, f) => s + f.total, 0);
+  if (earned === possible) return "Workpaper reviewed and approved. Strong professional judgment demonstrated throughout. — S. Mitchell, Senior Manager";
+  if (earned >= 6) return "Workpaper reviewed with minor comments. Please address the noted items and resubmit for sign-off. — S. Mitchell, Senior Manager";
+  if (earned >= 4) return "Workpaper reviewed. Several areas require improvement before I can sign off. Please reference the prior year workpaper and revise. — S. Mitchell, Senior Manager";
+  return "Workpaper returned for significant revision. Review the prior year documentation carefully and resubmit all steps. — S. Mitchell, Senior Manager";
+}
+
 /* ─── SPREADSHEET VIEWER ──────────────────────────────────────────── */
-function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  const isCompact = layout === "landscape";
+function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange, reviewResults, reviewLoading, onSubmitReview }) {
+  const feedback = buildFeedback(reviewResults);
+const isCompact = layout === "landscape";
   const f = '"Segoe UI", sans-serif';
   const mono = '"Consolas", "Courier New", monospace';
   const cellPad = isCompact ? "4px 5px" : "6px 8px";
@@ -373,7 +500,7 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
           );
         })}
 
-        {/* KPMG Professional Judgment Framework */}
+{/* KPMG Professional Judgment Framework */}
         <div style={{ borderTop: "3px solid #00338D", background: "#f0f3f8" }}>
           <div style={{
             background: "#00338D", padding: isCompact ? "6px 10px" : "8px 12px",
@@ -397,7 +524,9 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
               fontStyle: "italic", fontFamily: f,
             }}>Internal audit documentation — not prepared by client</span>
           </div>
-          {data.judgment.map((item, ji) => (
+          {data.judgment.map((item, ji) => {
+            const stepFb = feedback?.[ji];
+            return (
             <div key={ji} style={{ borderBottom: "1px solid #d0d6e0" }}>
               <div style={{
                 padding: isCompact ? "6px 10px" : "8px 12px",
@@ -407,13 +536,20 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
                 display: "flex", alignItems: "center", gap: 6,
               }}>
                 <span style={{
-                  background: "#00338D", color: "white",
+                  background: stepFb ? (stepFb.score === stepFb.total ? "#217346" : "#E8A020") : "#00338D",
+                  color: "white",
                   width: isCompact ? 16 : 18, height: isCompact ? 16 : 18,
                   borderRadius: "50%", display: "flex",
                   alignItems: "center", justifyContent: "center",
                   fontSize: isCompact ? 8 : 9, fontWeight: 700, flexShrink: 0,
-                }}>{ji + 1}</span>
+                  transition: "background 0.3s",
+                }}>{stepFb ? (stepFb.score === stepFb.total ? "✓" : "!") : ji + 1}</span>
                 {item.step}
+                {stepFb && (
+                  <span style={{ marginLeft: "auto", fontSize: isCompact ? 8 : 9, fontWeight: 600, color: stepFb.score === stepFb.total ? "#217346" : "#C47F17" }}>
+                    {stepFb.score}/{stepFb.total}
+                  </span>
+                )}
               </div>
               {item.content ? (
                 <div style={{
@@ -441,10 +577,11 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
                       onJudgmentChange(updated);
                     }}
                     placeholder="Click here to enter your response..."
+                    disabled={!!reviewResults}
                     style={{
                       width: "100%", minHeight: isCompact ? 48 : 56,
                       padding: isCompact ? "8px 10px 8px 22px" : "10px 12px 10px 26px",
-                      background: "white", cursor: "text",
+                      background: reviewResults ? "#f9f9f9" : "white", cursor: reviewResults ? "default" : "text",
                       borderLeft: "3px solid #0078D4",
                       borderTop: "none", borderRight: "none", borderBottom: "none",
                       borderRadius: 2, outline: "none",
@@ -456,6 +593,7 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
                       transition: "box-shadow 0.15s, border-color 0.15s",
                     }}
                     onFocus={e => {
+                      if (reviewResults) return;
                       e.currentTarget.style.boxShadow = "inset 0 1px 6px rgba(0,120,212,0.12)";
                       e.currentTarget.style.borderLeftColor = "#005a9e";
                     }}
@@ -466,8 +604,94 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
                   />
                 </div>
               )}
+              {/* Inline feedback */}
+              {stepFb && (
+                <div style={{
+                  margin: isCompact ? "0 10px 6px" : "0 12px 8px",
+                  padding: isCompact ? "8px 10px" : "10px 14px",
+                  background: stepFb.score === stepFb.total ? "#f0faf0" : "#fffbf0",
+                  border: `1px solid ${stepFb.score === stepFb.total ? "#c8e6c8" : "#f0dca0"}`,
+                  borderRadius: 4,
+                }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: isCompact ? 4 : 6, marginBottom: 6 }}>
+                    {stepFb.criteria.map((c, ci) => (
+                      <span key={ci} style={{
+                        fontSize: isCompact ? 8 : 9, fontFamily: f,
+                        padding: "2px 8px", borderRadius: 10,
+                        background: c.met ? "#d4edda" : "#ffeeba",
+                        color: c.met ? "#155724" : "#856404",
+                        fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 3,
+                      }}>
+                        {c.met ? "✓" : "✗"} {c.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{
+                    fontSize: isCompact ? 9 : 10, color: "#444",
+                    lineHeight: 1.6, fontFamily: f,
+                  }}>{stepFb.text}</div>
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
+
+          {/* Submit / Manager sign-off */}
+          {onSubmitReview && !reviewResults && (
+            <div style={{
+              padding: isCompact ? "10px 10px" : "14px 12px",
+              display: "flex", justifyContent: "center",
+            }}>
+              <button
+                onClick={onSubmitReview}
+                disabled={reviewLoading || !(judgmentState?.every(s => s.trim()))}
+                style={{
+                  background: reviewLoading ? "#aaa" : !(judgmentState?.every(s => s.trim())) ? "#ccc" : "#00338D",
+                  color: "white", border: "none",
+                  padding: isCompact ? "8px 24px" : "10px 32px",
+                  borderRadius: 4, fontSize: isCompact ? 11 : 13,
+                  fontWeight: 700, cursor: reviewLoading || !(judgmentState?.every(s => s.trim())) ? "default" : "pointer",
+                  fontFamily: f, letterSpacing: 0.3,
+                  boxShadow: "0 2px 6px rgba(0,51,141,0.3)",
+                }}
+              >
+                {reviewLoading ? "Submitting for Review..." : "Submit Workpaper for Review"}
+              </button>
+            </div>
+          )}
+
+          {feedback && (
+            <div style={{
+              margin: isCompact ? "6px 10px 10px" : "8px 12px 14px",
+              padding: isCompact ? "10px 12px" : "14px 16px",
+              background: "#f8f9fa", border: "2px solid #00338D",
+              borderRadius: 6,
+            }}>
+              <div style={{
+                fontSize: isCompact ? 10 : 12, fontWeight: 700,
+                color: "#00338D", fontFamily: f, marginBottom: 8,
+                display: "flex", alignItems: "center", gap: 6,
+              }}>
+                <span style={{ fontSize: isCompact ? 14 : 18 }}>📋</span>
+                Manager Review
+              </div>
+              <div style={{
+                fontSize: isCompact ? 9 : 11, color: "#333",
+                lineHeight: 1.6, fontFamily: f, fontStyle: "italic",
+                padding: "8px 12px",
+                background: "white", borderRadius: 4,
+                borderLeft: "3px solid #00338D",
+              }}>
+                {getManagerComment(feedback)}
+              </div>
+              <div style={{
+                marginTop: 8, fontSize: isCompact ? 8 : 9,
+                color: "#888", fontFamily: f, textAlign: "right",
+              }}>
+                {feedback.reduce((s, f) => s + f.score, 0)}/{feedback.reduce((s, f) => s + f.total, 0)} criteria met
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* Sheet tabs */}
@@ -490,13 +714,13 @@ function SpreadsheetView({ data, layout, judgmentState, onJudgmentChange }) {  c
 }
 
 /* ─── FOLDER WINDOW ────────────────────────────────────────────────── */
-function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout, judgmentState, onJudgmentChange, docsReceived, fileNotif, onFileOpened }) {  const isCompact = layout === "landscape";
+function FolderWindow({ title, fileName, spreadsheetData, onClose, zIndex, onFocus, layout, judgmentState, onJudgmentChange, docsReceived, fileNotif, onFileOpened, reviewResults, reviewLoading, onSubmitReview }) {  const isCompact = layout === "landscape";
   const [fileOpen, setFileOpen] = useState(false);
 
   if (fileOpen) {
     return (
       <AppWindow title={fileName + " — Excel"} onClose={() => setFileOpen(false)} zIndex={zIndex} onFocus={onFocus} accentColor="#217346" layout={layout}>
-<SpreadsheetView data={spreadsheetData} layout={layout} judgmentState={judgmentState} onJudgmentChange={onJudgmentChange} />      </AppWindow>
+<SpreadsheetView data={spreadsheetData} layout={layout} judgmentState={judgmentState} onJudgmentChange={onJudgmentChange} reviewResults={reviewResults} reviewLoading={reviewLoading} onSubmitReview={onSubmitReview} />      </AppWindow>
     );
   }
 
@@ -1043,6 +1267,20 @@ if (id === "email") setNotifPulse(false);
   const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formattedDate = time.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
 const [cyJudgment, setCyJudgment] = useState(["", "", "", "", ""]);
+  const [reviewResults, setReviewResults] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const handleSubmitReview = useCallback(async () => {
+    setReviewLoading(true);
+    try {
+      const results = await submitReview(cyJudgment);
+      setReviewResults(results);
+    } catch (err) {
+      console.error("Review failed:", err);
+    } finally {
+      setReviewLoading(false);
+    }
+  }, [cyJudgment]);
 const [emailThread, setEmailThread] = useState([]);
   const [docsReceived, setDocsReceived] = useState(false);
   const [cyFolderNotif, setCyFolderNotif] = useState(false);
@@ -1225,7 +1463,8 @@ const [emailThread, setEmailThread] = useState([]);
       {/* ─── APP WINDOWS ─── */}
       {openWindows.includes("cy-folder") && (
         <FolderWindow title="Current Year Audit Working Papers" fileName={`CY ${AUDIT_CY} Allowance for Doubtful Accounts.xlsx`}
-          spreadsheetData={CY_DATA} judgmentState={cyJudgment} onJudgmentChange={setCyJudgment}
+         spreadsheetData={CY_DATA} judgmentState={cyJudgment} onJudgmentChange={setCyJudgment}
+          reviewResults={reviewResults} reviewLoading={reviewLoading} onSubmitReview={handleSubmitReview}
           onClose={() => closeApp("cy-folder")} zIndex={windowZ["cy-folder"] || 10}
           onFocus={() => focusApp("cy-folder")} layout={layout}
           docsReceived={docsReceived} fileNotif={cyFileNotif} onFileOpened={() => setCyFileNotif(false)} />
