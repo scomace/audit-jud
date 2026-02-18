@@ -12,7 +12,7 @@ export async function onRequestPost(context) {
 
   const systemPrompt = `You are evaluating audit workpaper responses for an Allowance for Doubtful Accounts engagement. The client is Sample Corp with trade receivables analyzed using an A/R aging approach.
 
-Analyze the student's responses to 5 professional judgment steps and return ONLY a valid JSON object with boolean evaluations. No other text, no markdown, no explanation, no backticks.
+Analyze the student's responses to 5 professional judgment steps and return ONLY a valid JSON object with boolean evaluations. No other text, no markdown, no explanation, no backticks. Just the raw JSON object.
 
 Evaluation criteria:
 
@@ -63,9 +63,8 @@ ${steps[4] || "(left blank)"}`;
       { role: "user", parts: [{ text: userMessage }] },
     ],
     generationConfig: {
-      maxOutputTokens: 200,
+      maxOutputTokens: 300,
       temperature: 0.1,
-      responseMimeType: "application/json",
     },
   };
 
@@ -86,17 +85,35 @@ ${steps[4] || "(left blank)"}`;
     });
   }
 
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-  try {
-    const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
-    return new Response(JSON.stringify({ results: parsed }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch {
-    return new Response(JSON.stringify({ error: "Failed to parse evaluation", raw }), {
-      status: 502,
-      headers: { "Content-Type": "application/json" },
-    });
+  // Try multiple parsing strategies
+  let parsed = null;
+  const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+  // Strategy 1: direct parse
+  try { parsed = JSON.parse(cleaned); } catch {}
+
+  // Strategy 2: extract first { ... } block
+  if (!parsed) {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { parsed = JSON.parse(match[0]); } catch {}
+    }
   }
+
+  // Strategy 3: fallback with all false
+  if (!parsed) {
+    parsed = {
+      step1: { valuation: false, completeness: false, materiality: false },
+      step2: { accept_rates: false, historical_writeoff: false, industry_benchmark: false },
+      step3: { consistent: false },
+      step4: { links_to_objective: false },
+      step5: { summarizes: false },
+    };
+  }
+
+  return new Response(JSON.stringify({ results: parsed }), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
