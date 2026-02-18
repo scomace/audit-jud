@@ -1436,7 +1436,7 @@ const [emailThread, setEmailThread] = useState([]);
               color: "white", fontSize: 12, fontWeight: 400,
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <span>Bias Eliminated!</span>
+              <span>Time Bias Eliminated!</span>
               <button onClick={() => setShowDialog(false)} style={{
                 background: "none", border: "none", color: "white",
                 fontSize: 14, cursor: "pointer",
@@ -1445,7 +1445,7 @@ const [emailThread, setEmailThread] = useState([]);
             <div style={{ padding: "20px 24px", display: "flex", gap: 16, alignItems: "flex-start" }}>
               <div style={{ fontSize: 32, lineHeight: 1 }}>✅</div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Bias Eliminated: Time Added to Budget!</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 6 }}>Time Bias Eliminated!</div>
                 <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>Your senior manager has approved an additional 10 minutes to allow for more robust professional judgment. The budget countdown timer has been updated.</div>
               </div>
             </div>

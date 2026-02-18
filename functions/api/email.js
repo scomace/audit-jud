@@ -79,11 +79,16 @@ This is a parsing requirement. The prefix will be stripped before display.`;
     });
   }
 
-const raw =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text || "[NO_DOCS] Sincerely,\nGordon";
+const cand = data?.candidates?.[0];
+const parts = cand?.content?.parts ?? [];
+const rawText = parts.map(p => (p?.text ?? "")).join("").trim();
 
-  const docsAttached = raw.startsWith("[ATTACHED]");
-  const reply = raw.replace(/^\[(ATTACHED|NO_DOCS)\]\s*/, "");
+const raw = rawText || "[NO_DOCS] Sincerely,\nGordon";
+
+
+ const docsAttached = raw.trimStart().startsWith("[ATTACHED]");
+const reply = raw.replace(/^\[(ATTACHED|NO_DOCS)\]\s*/, "");
+
 
   return new Response(JSON.stringify({ reply, docsAttached }), {
     headers: { "Content-Type": "application/json" },
