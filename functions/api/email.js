@@ -81,16 +81,23 @@ This is a parsing requirement. The prefix will be stripped before display.`;
 
 const cand = data?.candidates?.[0];
 const parts = cand?.content?.parts ?? [];
-const rawText = parts.map(p => (p?.text ?? "")).join("").trim();
 
-const raw = rawText || "[NO_DOCS] Sincerely,\nGordon";
+// Gemini can split a single response across multiple parts.
+// If you only read parts[0], the email can appear "cut off".
+const rawJoined = parts.map(p => (p?.text ?? "")).join("").trim();
 
+// Fallback if Gemini returns nothing
+const raw = rawJoined || "[NO_DOCS] Sincerely,\nGordon";
 
- const docsAttached = raw.trimStart().startsWith("[ATTACHED]");
-const reply = raw.replace(/^\[(ATTACHED|NO_DOCS)\]\s*/, "");
+// Prefix parsing (robust to leading whitespace/newlines)
+const trimmed = raw.trimStart();
+const match = trimmed.match(/^\[(ATTACHED|NO_DOCS)\]\s*/);
 
+const docsAttached = match?.[1] === "ATTACHED";
+const reply = match ? trimmed.slice(match[0].length) : trimmed;
 
-  return new Response(JSON.stringify({ reply, docsAttached }), {
-    headers: { "Content-Type": "application/json" },
-  });
+return new Response(JSON.stringify({ reply, docsAttached }), {
+  headers: { "Content-Type": "application/json" },
+});
+
 }

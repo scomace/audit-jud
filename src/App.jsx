@@ -590,7 +590,7 @@ function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailTh
   const handleSend = async () => {
     if (!draft.trim() || sending) return;
     const userMsg = {
-      from: "you", name: "Audit Staff", to: "Gordon Whitfield",
+      from: "you", name: "Auditor", to: "Gordon Whitfield",
       subject: emailThread.length === 0 ? "Document Request" : "RE: " + (emailThread[0]?.subject || "Document Request"),
       time: now(), body: draft.trim(),
     };
@@ -604,7 +604,7 @@ function EmailWindow({ onClose, zIndex, onFocus, layout, emailThread, setEmailTh
     try {
 const { reply, docsAttached } = await sendEmail(updated);
       const clientMsg = {
-        from: "client", name: "Gordon Whitfield", to: "Audit Staff",
+        from: "client", name: "Gordon Whitfield", to: "Auditor",
         subject: "RE: " + (userMsg.subject.replace(/^RE:\s*/i, "")),
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         body: reply,
@@ -616,7 +616,7 @@ const { reply, docsAttached } = await sendEmail(updated);
       }
     } catch {
       const errMsg = {
-        from: "client", name: "System", to: "Audit Staff",
+        from: "client", name: "System", to: "Auditor",
         subject: "Delivery Failed",
         time: now(),
         body: "Your message could not be delivered. Please try again.",
@@ -1274,7 +1274,7 @@ const [emailThread, setEmailThread] = useState([]);
                 color: "white", fontSize: isCompact ? 13 : 18, fontWeight: 600, flexShrink: 0,
               }}>A</div>
               <div>
-                <div style={{ color: "white", fontSize: 14, fontWeight: 500 }}>Audit Staff</div>
+                <div style={{ color: "white", fontSize: 14, fontWeight: 500 }}>Auditor</div>
                 <div style={{ color: "#999", fontSize: 12 }}>staff@auditfirm.com</div>
               </div>
             </div>
