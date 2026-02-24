@@ -220,6 +220,14 @@ const STEP_FEEDBACK = {
     accept_rates: { label: "accepting client's rates as consistent with prior year", pass: "Comparing client rates to prior year is a solid baseline approach." },
     historical_writeoff: { label: "independently recalculating rates using historical write-off data", pass: "Independently recalculating rates from historical write-off data is a strong analytical procedure." },
     industry_benchmark: { label: "benchmarking against industry loss rates for similar-sized companies", pass: "Benchmarking against industry loss rates provides valuable external context." },
+    elected_writeoff: {
+      pass: "You correctly elected to perform historical write-off analysis, which is essential for independently validating the client's reserve rates.",
+      fail: "You should elect to perform historical write-off analysis. Simply accepting the client's rates without independently recalculating from write-off data is insufficient audit work.",
+    },
+    elected_additional: {
+      pass: "Electing to perform multiple approaches demonstrates thorough professional judgment.",
+      fail: "You should pursue at least two approaches, including historical write-off analysis, to ensure sufficient audit evidence.",
+    },
   },
   step3: {
     consistent: {
@@ -263,12 +271,15 @@ function buildFeedback(results) {
 
   // Step 2
   const s2 = results.step2 || {};
-  const approaches = [s2.accept_rates, s2.historical_writeoff, s2.industry_benchmark];
-  const count = approaches.filter(Boolean).length;
+  const mentioned = [s2.accept_rates, s2.historical_writeoff, s2.industry_benchmark];
+  const mentionedCount = mentioned.filter(Boolean).length;
+  const allMentioned = mentionedCount === 3;
   const s2parts = [];
-  if (count === 3) s2parts.push("You identified all three common approaches — excellent critical thinking.");
-  else if (count === 2) s2parts.push("You identified two valid approaches, which demonstrates good professional judgment.");
-  else if (count === 1) s2parts.push("You only identified one approach. Professional judgment requires considering at least two alternatives.");
+
+  // Alternatives identified
+  if (allMentioned) s2parts.push("You identified all three common approaches — excellent critical thinking.");
+  else if (mentionedCount === 2) s2parts.push("You identified two of the three common approaches.");
+  else if (mentionedCount === 1) s2parts.push("You only identified one approach. Professional judgment requires considering multiple alternatives.");
   else s2parts.push("You did not identify any of the expected approaches.");
 
   const included = [], missed = [];
@@ -277,15 +288,24 @@ function buildFeedback(results) {
     else missed.push(STEP_FEEDBACK.step2[key].label);
   }
   if (included.length) s2parts.push(included.join(" "));
-  if (missed.length && count < 3) s2parts.push("Your response would be further strengthened by also considering: " + missed.join("; ") + ".");
+  if (missed.length && !allMentioned) s2parts.push("Your response would be further strengthened by also considering: " + missed.join("; ") + ".");
+
+  // Elected approaches
+  s2parts.push(s2.elected_writeoff ? STEP_FEEDBACK.step2.elected_writeoff.pass : STEP_FEEDBACK.step2.elected_writeoff.fail);
+  if (s2.elected_writeoff) {
+    s2parts.push(s2.elected_additional ? STEP_FEEDBACK.step2.elected_additional.pass : STEP_FEEDBACK.step2.elected_additional.fail);
+  }
+
+  // Scoring: 1 point for all 3 mentioned, 1 point for electing write-off, 1 point for electing additional
+  const s2score = (allMentioned ? 1 : 0) + (s2.elected_writeoff ? 1 : 0) + (s2.elected_additional ? 1 : 0);
 
   feedback.push({
-    step: 2, score: Math.min(count, 2), total: 2,
+    step: 2, score: s2score, total: 3,
     text: s2parts.join(" "),
     criteria: [
-      { label: "Accept client rates vs. PY", met: !!s2.accept_rates },
-      { label: "Historical write-off recalculation", met: !!s2.historical_writeoff },
-      { label: "Industry benchmark comparison", met: !!s2.industry_benchmark },
+      { label: "All three alternatives identified", met: allMentioned },
+      { label: "Historical write-off analysis elected", met: !!s2.elected_writeoff },
+      { label: "Multiple approaches pursued", met: !!s2.elected_additional },
     ],
   });
 

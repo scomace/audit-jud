@@ -22,9 +22,11 @@ Step 1 (Clarify Issues & Objectives):
 - "materiality": Did the student specify any specific dollar amount ($) or percentage (%) threshold related to materiality or tolerable misstatement? General references to "materiality" without a number do NOT count.
 
 Step 2 (Consider Alternatives):
-- "accept_rates": Did the student mention comparing or accepting client's reserve rates against prior year as an approach?
-- "historical_writeoff": Did the student mention recalculating or analyzing historical write-off data as an approach?
-- "industry_benchmark": Did the student mention benchmarking against industry loss rates, peer companies, or external data as an approach?
+- "accept_rates": Did the student mention comparing or accepting client's reserve rates against prior year as an alternative to consider?
+- "historical_writeoff": Did the student mention recalculating or analyzing historical write-off data as an alternative to consider?
+- "industry_benchmark": Did the student mention benchmarking against industry loss rates, peer companies, or external data as an alternative to consider?
+- "elected_writeoff": Did the student elect or choose to actually PERFORM the historical write-off analysis? Simply listing it as a possible approach is NOT enough — they must indicate they will pursue, execute, or carry out this approach. If they say "Elected to perform approach (1)" and approach (1) is accepting client rates, this is FALSE because they did not elect the write-off approach.
+- "elected_additional": Did the student elect to perform at least one OTHER approach IN ADDITION to historical write-offs? They must pursue at least two approaches total, one of which must be historical write-offs.
 
 Step 3 (Gather & Evaluate Information):
 - "consistent": Are the procedures described logically consistent with at least one approach identified in Step 2? If Step 2 was empty or vague, evaluate whether the procedures described would be reasonable for ANY of the three standard approaches.
@@ -36,7 +38,7 @@ Step 5 (Articulate & Document Rationale):
 - "summarizes": Does this provide a cohesive summary that references work from multiple prior steps (not just restating the conclusion)?
 
 Return ONLY this exact JSON structure with true/false values:
-{"step1":{"valuation":true,"completeness":true,"materiality":true},"step2":{"accept_rates":true,"historical_writeoff":true,"industry_benchmark":true},"step3":{"consistent":true},"step4":{"links_to_objective":true},"step5":{"summarizes":true}}`;
+{"step1":{"valuation":true,"completeness":true,"materiality":true},"step2":{"accept_rates":true,"historical_writeoff":true,"industry_benchmark":true,"elected_writeoff":true,"elected_additional":true},"step3":{"consistent":true},"step4":{"links_to_objective":true},"step5":{"summarizes":true}}`;
 
   const userMessage = `Here are the student's 5 professional judgment step responses to evaluate:
 
@@ -63,7 +65,7 @@ ${steps[4] || "(left blank)"}`;
       { role: "user", parts: [{ text: userMessage }] },
     ],
     generationConfig: {
-      maxOutputTokens: 4096,
+      maxOutputTokens: 1024,
       temperature: 0.1,
     },
   };
@@ -108,7 +110,7 @@ ${steps[4] || "(left blank)"}`;
   if (!parsed) {
     parsed = {
       step1: { valuation: false, completeness: false, materiality: false },
-      step2: { accept_rates: false, historical_writeoff: false, industry_benchmark: false },
+      step2: { accept_rates: false, historical_writeoff: false, industry_benchmark: false, elected_writeoff: false, elected_additional: false },
       step3: { consistent: false },
       step4: { links_to_objective: false },
       step5: { summarizes: false },
