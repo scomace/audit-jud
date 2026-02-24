@@ -65,7 +65,7 @@ ${steps[4] || "(left blank)"}`;
       { role: "user", parts: [{ text: userMessage }] },
     ],
     generationConfig: {
-      maxOutputTokens: 1024,
+      maxOutputTokens: 4096,
       temperature: 0.1,
     },
   };
