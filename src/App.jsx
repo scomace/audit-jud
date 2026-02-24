@@ -522,7 +522,7 @@ const isCompact = layout === "landscape";
             <span style={{
               fontSize: isCompact ? 8 : 9, color: "#555",
               fontStyle: "italic", fontFamily: f,
-            }}>Internal audit documentation — not prepared by client</span>
+            }}>Internal training documentation — not for file, just verifying professional judgment thought process</span>
           </div>
           {data.judgment.map((item, ji) => {
             const stepFb = feedback?.[ji];
