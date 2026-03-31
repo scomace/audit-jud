@@ -1083,7 +1083,7 @@ function IMWindow({ onClose, zIndex, onFocus, layout, onTimeExtended }) {
     setTyping(true);
 
     try {
-const { reply, flagged, timeApproved } = await sendIM(updated);
+      const { reply, flagged } = await sendIM(updated);
       const newCount = flagged ? flagCount + 1 : flagCount;
       setFlagCount(newCount);
 
@@ -1100,7 +1100,7 @@ const { reply, flagged, timeApproved } = await sendIM(updated);
           text: reply,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         }]);
-        if (timeApproved && onTimeExtended) {
+        if (reply.trim().toLowerCase() === "k" && onTimeExtended) {
           onTimeExtended();
         }
       }
