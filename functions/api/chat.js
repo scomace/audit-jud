@@ -65,7 +65,7 @@ Remember: you are texting on IM, not writing emails. Keep it casual and short. S
     },
     contents: geminiMessages,
     generationConfig: {
-      maxOutputTokens: 2000,
+      maxOutputTokens: 400,
       temperature: 0.9,
     },
   };
